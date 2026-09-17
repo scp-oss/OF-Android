@@ -117,3 +117,8 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: of-android/${{ steps.apk.outputs.path }}
           generate_release_notes: true
+          # Explicit, not left to inference — Obtainium hides prereleases
+          # by default, and a "-mailru"-suffixed tag could otherwise read
+          # as one.
+          prerelease: false
+          make_latest: true
