@@ -34,12 +34,20 @@ android {
             // install a truly unsigned one), just not attributable to a
             // dedicated release identity.
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
+            // R8 minification was configured here (isMinifyEnabled = true)
+            // but proguard-rules.pro was completely empty — no keep rules
+            // for kotlinx.serialization's reflective serializer lookup, the
+            // AIDL-generated IUnifiedService interface, or anything else.
+            // Nothing had ever actually exercised this: this repo had no CI
+            // before, so no one had ever run a real `assembleRelease` build
+            // against it. Every user-visible crash on tunnel start, across
+            // every transport (not just the new mailru one), matches R8
+            // having broken something in that shared start-up path.
+            // Disabled rather than papering over it with keep rules for a
+            // sideloaded, personal-use build where obfuscation buys
+            // nothing but harder-to-read crash reports — see CrashHandler.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
         debug {
             isMinifyEnabled = false
