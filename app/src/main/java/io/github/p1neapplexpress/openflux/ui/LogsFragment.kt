@@ -1,5 +1,9 @@
 package io.github.p1neapplexpress.openflux.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -9,12 +13,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import io.github.p1neapplexpress.openflux.R
 import io.github.p1neapplexpress.openflux.event.AppEvent
 import io.github.p1neapplexpress.openflux.event.EventBus
+import io.github.p1neapplexpress.openflux.util.CrashHandler
+import io.github.p1neapplexpress.openflux.util.Logx
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,11 +70,79 @@ class LogsFragment : BaseFragment() {
             if (autoScroll) scrollView.post { scrollView.fullScroll(View.FOCUS_DOWN) }
         }
 
+        view.findViewById<TextView>(R.id.btn_crashlog).setOnClickListener {
+            showCrashLogPicker()
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             EventBus.events.collect { ev ->
                 if (ev is AppEvent.LogMessage) enqueue(ev.message)
             }
         }
+    }
+
+    private fun showCrashLogPicker() {
+        val ctx = requireContext()
+        val crashFiles = CrashHandler.dir(ctx).listFiles()
+            ?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
+
+        val fullLog = Logx.file()
+        val entries = buildList {
+            crashFiles.forEach { add(it.name to it) }
+            if (fullLog != null && fullLog.exists()) add("full app_log.txt" to fullLog)
+        }
+
+        if (entries.isEmpty()) {
+            Toast.makeText(ctx, R.string.no_crash_logs, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AlertDialog.Builder(ctx)
+            .setTitle(R.string.crash_logs_title)
+            .setItems(entries.map { it.first }.toTypedArray()) { _, which ->
+                showFileContent(entries[which].second)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showFileContent(file: File) {
+        val ctx = requireContext()
+        val content = runCatching { file.readText() }.getOrElse { "(failed to read ${file.name}: ${it.message})" }
+
+        val textView = TextView(ctx).apply {
+            text = content
+            textSize = 11f
+            setTextIsSelectable(true)
+            typeface = android.graphics.Typeface.MONOSPACE
+            setPadding(32, 24, 32, 24)
+        }
+        val scroll = ScrollView(ctx).apply { addView(textView) }
+
+        AlertDialog.Builder(ctx)
+            .setTitle(file.name)
+            .setView(scroll)
+            .setPositiveButton(R.string.share) { _, _ -> shareText(file.name, content) }
+            .setNeutralButton(R.string.copy) { _, _ -> copyToClipboard(file.name, content) }
+            .setNegativeButton(R.string.close, null)
+            .show()
+    }
+
+    private fun shareText(subject: String, content: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, content)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.share)))
+    }
+
+    private fun copyToClipboard(label: String, content: String) {
+        val ctx = requireContext()
+        val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText(label, content))
+        Toast.makeText(ctx, R.string.copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun enqueue(message: String) {

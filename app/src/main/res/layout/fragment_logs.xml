@@ -67,6 +67,23 @@
             android:text="AUTO-SCROLL"
             android:textColor="#00ff88"
             android:textSize="12sp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="20dp"
+            android:background="#1a2332" />
+
+        <TextView
+            android:id="@+id/btn_crashlog"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:letterSpacing="0.1"
+            android:text="CRASH LOG"
+            android:textColor="#ffaa00"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

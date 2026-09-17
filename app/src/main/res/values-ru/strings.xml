@@ -14,6 +14,13 @@
     <string name="max_messenger_backend">Бэкенд MAX Messenger</string>
     <string name="mailru_backend">Бэкенд Mail.ru Docs</string>
 
+    <string name="crash_logs_title">Логи крашей</string>
+    <string name="no_crash_logs">Пока нет ни одного крашлога</string>
+    <string name="share">Поделиться</string>
+    <string name="copy">Копировать</string>
+    <string name="copied">Скопировано</string>
+    <string name="close">Закрыть</string>
+
     <string name="starting_transport">Запуск транспорта…</string>
     <string name="starting_tsocks">Запуск tun2socks…</string>
     <string name="connecting">Подключение…</string>
