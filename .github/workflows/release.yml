@@ -92,6 +92,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Explicit package list — the action's own default list still
+          # includes the long-removed legacy "tools" package, which makes
+          # sdkmanager fail outright ("Failed to find package 'tools'").
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
       - name: Build release APK
         working-directory: of-android
