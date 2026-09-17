@@ -14,7 +14,15 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: >-
+          Tag to create the release under (used when triggering manually
+          instead of by pushing a tag — this workflow creates the tag
+          itself via the Releases API, no separate `git push --tags` needed).
+        required: true
+        default: v1.0.0-mailru
 
 permissions:
   contents: write
@@ -100,5 +108,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: of-android/${{ steps.apk.outputs.path }}
           generate_release_notes: true
