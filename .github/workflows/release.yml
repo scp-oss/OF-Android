@@ -1,0 +1,104 @@
+name: Build and release APK
+
+# Triggered by pushing a tag like "v1.0.1". Rebuilds the openflux core
+# binary from the upstream OpenFlux source (so it always carries every
+# transport upstream has, not whatever was last hand-built), packages it
+# into the APK the same way the original repo does (a native binary
+# disguised as jniLibs/arm64-v8a/libp1npplydtransport.so so the Android
+# package installer extracts it), builds the app, and attaches the APK to
+# a GitHub Release. Obtainium tracks *this* repo's Releases page — it
+# never builds anything itself, it just watches for a new release here
+# and installs the APK asset from it.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OF-Android
+        uses: actions/checkout@v4
+        with:
+          path: of-android
+
+      - name: Checkout OpenFlux core (upstream)
+        uses: actions/checkout@v4
+        with:
+          repository: p1neappleXpress/OpenFlux
+          path: openflux-core
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: openflux-core/go.mod
+
+      - name: Set up Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: false
+
+      - name: Cross-compile openflux for arm64-v8a
+        working-directory: openflux-core
+        env:
+          NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          TOOLCHAIN="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export GOOS=android
+          export GOARCH=arm64
+          export CGO_ENABLED=1
+          export CC="$TOOLCHAIN/aarch64-linux-android35-clang"
+          export CXX="$TOOLCHAIN/aarch64-linux-android35-clang++"
+          export CGO_CFLAGS="-march=armv8-a -O2"
+          export CGO_CXXFLAGS="-march=armv8-a -O2"
+          export CGO_LDFLAGS="-Wl,-rpath,/system/lib64 -Wl,-rpath,/vendor/lib64"
+          go build \
+            -v \
+            -ldflags="-s -w -linkmode external -extldflags '-Wl,-rpath,/system/lib64 -Wl,-rpath,/vendor/lib64' -checklinkname=0" \
+            -o "$GITHUB_WORKSPACE/of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtransport.so" \
+            .
+          file "$GITHUB_WORKSPACE/of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtransport.so"
+
+      - name: Verify mailru transport is present in the rebuilt binary
+        run: |
+          set -euo pipefail
+          if ! strings "of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtransport.so" | grep -q "transport/mailru"; then
+            echo "::error::rebuilt binary does not contain transport/mailru — upstream OpenFlux checkout may be stale or the package path changed"
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build release APK
+        working-directory: of-android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Locate APK
+        id: apk
+        working-directory: of-android
+        run: |
+          set -euo pipefail
+          apk=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: of-android/${{ steps.apk.outputs.path }}
+          generate_release_notes: true

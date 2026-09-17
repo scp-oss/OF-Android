@@ -28,6 +28,12 @@ android {
 
     buildTypes {
         release {
+            // Sideloaded via Obtainium, not the Play Store — reuse the
+            // auto-generated debug key instead of managing a real release
+            // keystore. Still a validly signed APK (Android refuses to
+            // install a truly unsigned one), just not attributable to a
+            // dedicated release identity.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

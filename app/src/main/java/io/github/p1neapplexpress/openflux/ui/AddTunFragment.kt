@@ -88,6 +88,12 @@ class AddTunFragment : BaseFragment() {
                     maxToken.setText(argValue(t.transportConnPayload, "--maxToken"))
                     maxUid.setText(argValue(t.transportConnPayload, "--maxUid"))
                 }
+                TransportType.mailru -> {
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.mailru_backend)
+                    docUrl.setText(argValue(t.transportConnPayload, "--url"))
+                }
             }
 
             debug = t.transportConnPayload.contains("--debug")
@@ -115,6 +121,12 @@ class AddTunFragment : BaseFragment() {
                     maxContainer.isVisible = true
                     yandexContainer.isVisible = false
                     transportLabel.text = getString(R.string.max_messenger_backend)
+                },
+                onMailru = {
+                    transport = TransportType.mailru
+                    maxContainer.isVisible = false
+                    yandexContainer.isVisible = true
+                    transportLabel.text = getString(R.string.mailru_backend)
                 },
             )
         }
@@ -194,6 +206,14 @@ class AddTunFragment : BaseFragment() {
                     if (debug) add("--debug")
                 }
             }
+            TransportType.mailru -> {
+                if (docUrl.isEmpty()) return null
+                buildList {
+                    add("--client"); add("--transport"); add("mailru")
+                    add("--url"); add(docUrl)
+                    if (debug) add("--debug")
+                }
+            }
         }
         return Tunnel(
             id = id,
@@ -209,6 +229,7 @@ class AddTunFragment : BaseFragment() {
         onYandex: () -> Unit,
         onVyandex: () -> Unit,
         onMax: () -> Unit,
+        onMailru: () -> Unit,
     ) {
         val popupView = LayoutInflater.from(context).inflate(R.layout.dropdown_transport_menu, null)
         val popup = PopupWindow(
@@ -232,6 +253,9 @@ class AddTunFragment : BaseFragment() {
         }
         popupView.findViewById<View>(R.id.option_max)?.setOnClickListener {
             onMax(); popup.dismiss()
+        }
+        popupView.findViewById<View>(R.id.option_mailru)?.setOnClickListener {
+            onMailru(); popup.dismiss()
         }
 
         popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
