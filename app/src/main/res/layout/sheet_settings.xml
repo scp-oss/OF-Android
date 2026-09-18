@@ -155,28 +155,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/btnCrashLogs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/bg_button_outlined"
-            android:paddingVertical="12dp"
-            android:layout_marginTop="8dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/crash_logs_title"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/ink" />
-
-        </LinearLayout>
-
-        <LinearLayout
             android:id="@+id/btnEmailLogs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

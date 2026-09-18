@@ -4,7 +4,6 @@ import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.app.Activity.RESULT_OK
-import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
@@ -60,7 +59,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -827,9 +825,6 @@ class HomeFragment : BaseFragment() {
             Logx.i("Home", "settings saved: SOCKS5 port ${port.text}, UDP/QUIC ${if (udp.isChecked) "on" else "off"}")
             dialog.dismiss()
         }
-        v.findViewById<View>(R.id.btnCrashLogs).setOnClickListener {
-            showCrashLogPicker()
-        }
         v.findViewById<View>(R.id.btnEmailLogs).setOnClickListener {
             emailAllLogs()
         }
@@ -885,63 +880,10 @@ class HomeFragment : BaseFragment() {
     }
 
     // ==================================================================
-    // Crash log picker (moved here from the old LogsFragment)
+    // Send logs by email (replaces the old raw-text crash-log viewer —
+    // per direct request, crash logs now go straight to email instead of
+    // being shown in a text dialog first)
     // ==================================================================
-
-    private fun showCrashLogPicker() {
-        val ctx = requireContext()
-        val crashFiles = CrashHandler.dir(ctx).listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
-        val fullLog = Logx.file()
-        val entries = buildList {
-            crashFiles.forEach { add(it.name to it) }
-            if (fullLog != null && fullLog.exists()) add("full app_log.txt" to fullLog)
-        }
-        if (entries.isEmpty()) {
-            Toast.makeText(ctx, R.string.no_crash_logs, Toast.LENGTH_SHORT).show()
-            return
-        }
-        androidx.appcompat.app.AlertDialog.Builder(ctx)
-            .setTitle(R.string.crash_logs_title)
-            .setItems(entries.map { it.first }.toTypedArray()) { _, which -> showFileContent(entries[which].second) }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun showFileContent(file: File) {
-        val ctx = requireContext()
-        val content = runCatching { file.readText() }.getOrElse { "(failed to read ${file.name}: ${it.message})" }
-        val textView = TextView(ctx).apply {
-            text = content
-            textSize = 11f
-            setTextIsSelectable(true)
-            typeface = android.graphics.Typeface.MONOSPACE
-            setPadding(32, 24, 32, 24)
-        }
-        val scroll = android.widget.ScrollView(ctx).apply { addView(textView) }
-        androidx.appcompat.app.AlertDialog.Builder(ctx)
-            .setTitle(file.name)
-            .setView(scroll)
-            .setPositiveButton(R.string.share) { _, _ -> shareText(file.name, content) }
-            .setNeutralButton(R.string.copy) { _, _ -> copyToClipboard(file.name, content) }
-            .setNegativeButton(R.string.close, null)
-            .show()
-    }
-
-    private fun shareText(subject: String, content: String) {
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_SUBJECT, subject)
-            putExtra(android.content.Intent.EXTRA_TEXT, content)
-        }
-        startActivity(android.content.Intent.createChooser(intent, getString(R.string.share)))
-    }
-
-    private fun copyToClipboard(label: String, content: String) {
-        val ctx = requireContext()
-        val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        cm.setPrimaryClip(ClipData.newPlainText(label, content))
-        Toast.makeText(ctx, R.string.copied, Toast.LENGTH_SHORT).show()
-    }
 
     /**
      * Every crash report plus the full app_log.txt, attached to one

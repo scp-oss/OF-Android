@@ -14,11 +14,7 @@
     <string name="max_messenger_backend">MAX Messenger backend</string>
     <string name="mailru_backend">Mail.ru Docs backend</string>
 
-    <string name="crash_logs_title">Crash logs</string>
-    <string name="no_crash_logs">No crash logs yet</string>
-    <string name="share">Share</string>
-    <string name="copy">Copy</string>
-    <string name="copied">Copied</string>
+    <string name="no_crash_logs">No logs yet</string>
     <string name="close">Close</string>
     <string name="email_logs_title">Send logs by email</string>
     <string name="email_logs_chooser">Send logs via…</string>
