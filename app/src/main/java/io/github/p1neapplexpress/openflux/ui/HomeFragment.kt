@@ -1,6 +1,7 @@
 package io.github.p1neapplexpress.openflux.ui
 
 import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.app.Activity.RESULT_OK
 import android.content.ClipData
@@ -13,7 +14,9 @@ import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -41,6 +44,8 @@ import io.github.p1neapplexpress.openflux.data.TransportType
 import io.github.p1neapplexpress.openflux.data.TunnelState
 import io.github.p1neapplexpress.openflux.event.AppEvent
 import io.github.p1neapplexpress.openflux.event.EventBus
+import io.github.p1neapplexpress.openflux.ui.widget.AuroraView
+import io.github.p1neapplexpress.openflux.ui.widget.PulseRingsView
 import io.github.p1neapplexpress.openflux.util.CrashHandler
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.util.toUptimeHms
@@ -68,13 +73,18 @@ class HomeFragment : BaseFragment() {
 
     // ---- hero ----
     private lateinit var powerWrap: View
-    private lateinit var powerRing: View
-    private lateinit var powerBtn: View
+    private lateinit var aurora: AuroraView
+    private lateinit var pulseRings: PulseRingsView
+    private lateinit var ringOuter: View
+    private lateinit var ringMid: View
+    private lateinit var connectButton: View
     private lateinit var powerIcon: ImageView
     private lateinit var statusDot: View
     private lateinit var heroState: TextView
     private lateinit var uptimeText: TextView
-    private var ringPulse: ObjectAnimator? = null
+    private var rotationAnim: ObjectAnimator? = null
+    private var breathAnim: ObjectAnimator? = null
+    private var currentVisualState: TunnelState? = null
 
     // ---- profile dropdown ----
     private lateinit var profileTrigger: View
@@ -142,8 +152,11 @@ class HomeFragment : BaseFragment() {
 
     private fun bindViews(view: View) {
         powerWrap = view.findViewById(R.id.powerWrap)
-        powerRing = view.findViewById(R.id.powerRing)
-        powerBtn = view.findViewById(R.id.powerBtn)
+        aurora = view.findViewById(R.id.aurora)
+        pulseRings = view.findViewById(R.id.pulseRings)
+        ringOuter = view.findViewById(R.id.ringOuter)
+        ringMid = view.findViewById(R.id.ringMid)
+        connectButton = view.findViewById(R.id.connectButton)
         powerIcon = view.findViewById(R.id.powerIcon)
         statusDot = view.findViewById(R.id.statusDot)
         heroState = view.findViewById(R.id.heroState)
@@ -187,7 +200,7 @@ class HomeFragment : BaseFragment() {
     // ---------------------------------------------------------------- hero / power
 
     private fun wireHero(view: View) {
-        powerBtn.setOnClickListener {
+        connectButton.setOnClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
             when (vm.active.value) {
                 is TunnelState.Running -> vm.stop()
@@ -202,25 +215,62 @@ class HomeFragment : BaseFragment() {
         if (intent != null) vpnPermission.launch(intent) else vm.startCurrent()
     }
 
+    // Ported as-is from the old TunnelsFragment — this is the visual the
+    // user specifically asked to keep from the previous UI: aurora glow +
+    // radar pulse rings + a breathing/rotating static ring pair + icon
+    // scale/pop/shake, driven by TunnelState.color the same way it always
+    // was. Only the surrounding screen changed, not this.
     private fun applyState(state: TunnelState) {
-        powerWrap.isSelected = false
+        if (state == currentVisualState) { renderTrigger(); return }
+        currentVisualState = state
+
+        val color = state.color
+        aurora.setStateColor(color)
+
         when (state) {
-            is TunnelState.Running -> {
-                powerBtn.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_power_btn_on)
-                powerIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.accent_ink))
-                stopRingPulse()
-                powerRing.alpha = 0f
+            is TunnelState.Idle -> {
+                heroState.text = getString(R.string.tap_to_connect)
+                heroState.setTextColor(ContextCompat.getColor(requireContext(), R.color.ink))
+                aurora.setIntensity(0.4f)
+                pulseRings.stop()
+                stopRotation()
+                startBreath()
+                animateIcon(scale = 1f, alpha = 0.92f)
             }
             is TunnelState.Connecting, is TunnelState.StartingTransport, is TunnelState.StartingTun2Socks -> {
-                powerBtn.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_power_btn_connecting)
-                powerIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.accent))
-                startRingPulse()
+                heroState.text = when (state) {
+                    is TunnelState.StartingTransport -> getString(R.string.starting_transport)
+                    is TunnelState.StartingTun2Socks -> getString(R.string.starting_tsocks)
+                    else -> getString(R.string.connecting)
+                }
+                heroState.setTextColor(color)
+                aurora.setIntensity(0.75f)
+                startRotation()
+                pulseRings.setColor(color)
+                pulseRings.start(color, intervalMs = 1800L)
+                stopBreath()
+                animateIcon(scale = 0.94f, alpha = 0.7f)
             }
-            else -> {
-                powerBtn.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_power_btn_idle)
-                powerIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.ink_faint))
-                stopRingPulse()
-                powerRing.alpha = 0f
+            is TunnelState.Running -> {
+                heroState.text = getString(R.string.running)
+                heroState.setTextColor(color)
+                aurora.setIntensity(1f)
+                stopRotation()
+                pulseRings.setColor(color)
+                pulseRings.start(color, intervalMs = 1400L)
+                startBreath()
+                animateIcon(scale = 1.08f, alpha = 1f)
+                popButton()
+            }
+            is TunnelState.Error -> {
+                heroState.text = state.message
+                heroState.setTextColor(color)
+                aurora.setIntensity(0.9f)
+                pulseRings.stop()
+                stopRotation()
+                stopBreath()
+                animateIcon(scale = 1f, alpha = 1f)
+                shake()
             }
         }
 
@@ -235,40 +285,68 @@ class HomeFragment : BaseFragment() {
         )
         statusDot.background?.mutate()?.setTint(dotColor)
 
-        heroState.text = when (state) {
-            is TunnelState.Running -> getString(R.string.running)
-            is TunnelState.Connecting -> getString(R.string.connecting)
-            is TunnelState.StartingTransport -> getString(R.string.starting_transport)
-            is TunnelState.StartingTun2Socks -> getString(R.string.starting_tsocks)
-            is TunnelState.Error -> state.message
-            else -> getString(R.string.tap_to_connect)
-        }
-
         uptimeText.isVisible = state is TunnelState.Running
         renderTrigger()
     }
 
-    private fun startRingPulse() {
-        if (ringPulse?.isRunning == true) return
-        powerRing.alpha = 0.55f
-        powerRing.scaleX = 0.86f
-        powerRing.scaleY = 0.86f
-        ringPulse = ObjectAnimator.ofPropertyValuesHolder(
-            powerRing,
-            android.animation.PropertyValuesHolder.ofFloat(View.SCALE_X, 0.86f, 1.28f),
-            android.animation.PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.86f, 1.28f),
-            android.animation.PropertyValuesHolder.ofFloat(View.ALPHA, 0.55f, 0f),
-        ).apply {
-            duration = 1600
-            interpolator = LinearInterpolator()
-            repeatCount = ValueAnimator.INFINITE
+    private fun animateIcon(scale: Float, alpha: Float) {
+        powerIcon.animate().cancel()
+        powerIcon.animate().scaleX(scale).scaleY(scale).alpha(alpha)
+            .setDuration(320L).setInterpolator(AccelerateDecelerateInterpolator()).start()
+    }
+
+    private fun popButton() {
+        connectButton.animate().cancel()
+        connectButton.scaleX = 0.94f; connectButton.scaleY = 0.94f
+        connectButton.animate().scaleX(1f).scaleY(1f).setDuration(420L)
+            .setInterpolator(OvershootInterpolator(1.6f)).start()
+    }
+
+    private fun shake() {
+        val props = PropertyValuesHolder.ofFloat(View.TRANSLATION_X, 0f, -14f, 14f, -10f, 10f, -4f, 4f, 0f)
+        ObjectAnimator.ofPropertyValuesHolder(connectButton, props).apply {
+            duration = 520L
+            interpolator = AccelerateDecelerateInterpolator()
             start()
         }
     }
 
-    private fun stopRingPulse() {
-        ringPulse?.cancel()
-        ringPulse = null
+    private fun startRotation() {
+        if (rotationAnim?.isRunning == true) return
+        rotationAnim = ObjectAnimator.ofFloat(ringOuter, View.ROTATION, 0f, 360f).apply {
+            duration = 4200L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = LinearInterpolator()
+            start()
+        }
+    }
+
+    private fun stopRotation() {
+        rotationAnim?.cancel()
+        rotationAnim = null
+        ringOuter.rotation = 0f
+    }
+
+    private fun startBreath() {
+        if (breathAnim?.isRunning == true) return
+        breathAnim = ObjectAnimator.ofPropertyValuesHolder(
+            ringOuter,
+            PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.02f),
+            PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.02f),
+        ).apply {
+            duration = 2400L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
+
+    private fun stopBreath() {
+        breathAnim?.cancel()
+        breathAnim = null
+        ringOuter.scaleX = 1f
+        ringOuter.scaleY = 1f
     }
 
     private fun renderUptime(seconds: Long) {

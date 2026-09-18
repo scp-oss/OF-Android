@@ -73,22 +73,41 @@
 
                 <FrameLayout
                     android:id="@+id/powerWrap"
-                    android:layout_width="148dp"
-                    android:layout_height="148dp">
+                    android:layout_width="360dp"
+                    android:layout_height="360dp">
+
+                    <io.github.p1neapplexpress.openflux.ui.widget.AuroraView
+                        android:id="@+id/aurora"
+                        android:layout_width="360dp"
+                        android:layout_height="360dp"
+                        android:layout_gravity="center" />
+
+                    <io.github.p1neapplexpress.openflux.ui.widget.PulseRingsView
+                        android:id="@+id/pulseRings"
+                        android:layout_width="300dp"
+                        android:layout_height="300dp"
+                        android:layout_gravity="center" />
 
                     <View
-                        android:id="@+id/powerRing"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/bg_power_ring"
-                        android:alpha="0" />
+                        android:id="@+id/ringOuter"
+                        android:layout_width="240dp"
+                        android:layout_height="240dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_ring_outer" />
+
+                    <View
+                        android:id="@+id/ringMid"
+                        android:layout_width="196dp"
+                        android:layout_height="196dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_ring_mid" />
 
                     <FrameLayout
-                        android:id="@+id/powerBtn"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_margin="10dp"
-                        android:background="@drawable/bg_power_btn_idle"
+                        android:id="@+id/connectButton"
+                        android:layout_width="144dp"
+                        android:layout_height="144dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_button_ripple"
                         android:clickable="true"
                         android:focusable="true">
 
@@ -97,8 +116,9 @@
                             android:layout_width="44dp"
                             android:layout_height="44dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_power"
-                            app:tint="@color/ink_faint" />
+                            android:src="@drawable/ic_power_filled"
+                            android:alpha="0.92"
+                            app:tint="@color/ink" />
 
                     </FrameLayout>
                 </FrameLayout>
