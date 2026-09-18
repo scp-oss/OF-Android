@@ -20,6 +20,12 @@ object Constants {
     const val INTENT_IPV6_PROXY = INTENT_PREFIX + "IPV6"
     const val INTENT_UDP_GW = INTENT_PREFIX + "UDPGW"
 
+    // Action name for the "Отключить" button on the pinned VPN notification
+    // (VpnNotificationManager) — a PendingIntent targeting SocksVpnService
+    // itself with this action, handled in onStartCommand() as a stop
+    // request rather than a (re-)configure request.
+    const val ACTION_STOP_VPN = "io.github.p1neapplexpress.openflux.ACTION_STOP_VPN"
+
     const val PREF = "profile"
     const val PREF_PROFILE = "profile"
     const val PREF_LAST_PROFILE = "last_profile"

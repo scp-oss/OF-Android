@@ -87,6 +87,13 @@ class SocksVpnService : android.net.VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent ?: return START_STICKY
+
+        if (intent.action == Constants.ACTION_STOP_VPN) {
+            Logx.i(TAG, "stop requested from notification action")
+            stopEverything()
+            return START_NOT_STICKY
+        }
+
         lastIntent = intent
         notifications.startForeground()
 
@@ -122,5 +129,13 @@ class SocksVpnService : android.net.VpnService() {
         runCatching { vpn.stop() }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        // Covers every path into this function, not just the notification
+        // action below — onRevoke() (OS-initiated) and onDestroy() reach
+        // it too. TunnelsViewModel.stop() (the app's own disconnect
+        // button) already resets its own state synchronously and ignores
+        // this if it arrives after that, so it's a safe no-op there; for
+        // every OTHER path it's what keeps the UI from being stuck showing
+        // Running/Connecting after a stop it didn't initiate itself.
+        EventBus.dispatch(AppEvent.TransportDisconnected)
     }
 }

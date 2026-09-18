@@ -6,6 +6,10 @@
     <string name="channel_name">VPN-сервис</string>
     <string name="notify_title">OpenFlux работает</string>
     <string name="notify_msg">Туннель активен</string>
+    <string name="notify_action_disconnect">Отключить</string>
+    <string name="update_available_title">Доступна новая версия</string>
+    <string name="update_available_message">Версия %1$s готова к установке.</string>
+    <string name="update_now">Обновить</string>
 
     <string name="prof_default">По умолчанию</string>
 

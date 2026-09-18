@@ -57,6 +57,7 @@ import io.github.p1neapplexpress.openflux.ui.widget.PulseRingsView
 import io.github.p1neapplexpress.openflux.util.Constants
 import io.github.p1neapplexpress.openflux.util.CrashHandler
 import io.github.p1neapplexpress.openflux.util.Logx
+import io.github.p1neapplexpress.openflux.util.UpdateChecker
 import io.github.p1neapplexpress.openflux.util.toUptimeHms
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
 import kotlinx.coroutines.Dispatchers
@@ -171,6 +172,7 @@ class HomeFragment : BaseFragment() {
         wireDock()
         restorePrefs()
         observe()
+        checkForUpdate()
     }
 
     private fun bindViews(view: View) {
@@ -1074,6 +1076,30 @@ class HomeFragment : BaseFragment() {
                 release.body?.takeIf { it.isNotBlank() } ?: release.name
             }
         }.getOrNull()
+    }
+
+    // ==================================================================
+    // In-app self-update prompt — direct request, so the user doesn't have
+    // to remember to open Obtainium separately. See UpdateChecker's own
+    // doc comment for why this never downloads/installs anything itself.
+    // ==================================================================
+
+    private fun checkForUpdate() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val info = UpdateChecker.check(requireContext()) ?: return@launch
+            if (!isAdded) return@launch
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(R.string.update_available_title)
+                .setMessage(getString(R.string.update_available_message, info.version))
+                .setPositiveButton(R.string.update_now) { _, _ ->
+                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(info.url)))
+                }
+                .setNegativeButton(R.string.cancel) { _, _ ->
+                    UpdateChecker.dismiss(requireContext(), info.version)
+                }
+                .setCancelable(false)
+                .show()
+        }
     }
 
     // ==================================================================

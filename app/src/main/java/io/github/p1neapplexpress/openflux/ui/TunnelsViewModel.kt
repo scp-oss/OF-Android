@@ -19,6 +19,8 @@ import io.github.p1neapplexpress.openflux.data.Tunnel
 import io.github.p1neapplexpress.openflux.data.TunnelRepository
 import io.github.p1neapplexpress.openflux.data.TunnelState
 import io.github.p1neapplexpress.openflux.data.TransportType
+import io.github.p1neapplexpress.openflux.event.AppEvent
+import io.github.p1neapplexpress.openflux.event.EventBus
 import io.github.p1neapplexpress.openflux.service.SocksVpnService
 import io.github.p1neapplexpress.openflux.util.Constants
 import io.github.p1neapplexpress.openflux.util.Logx
@@ -102,6 +104,33 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         val savedId = repo.getSelectedId()
         _activeProfileType.value = TransportType.entries.getOrNull(savedId?.toInt() ?: 0) ?: TransportType.yandex
         refresh()
+        observeExternalStop()
+    }
+
+    // Reacts to the tunnel being torn down from OUTSIDE this ViewModel's
+    // own stop() — the notification's "Отключить" action, an OS-initiated
+    // VpnService.onRevoke(), or any other path into
+    // SocksVpnService.stopEverything() that doesn't go through this
+    // ViewModel first. Without this, the UI kept showing Running/
+    // Connecting indefinitely after such a stop, since unbinding + resetting
+    // _active to Idle only ever happened inside stop() itself.
+    private fun observeExternalStop() {
+        viewModelScope.launch {
+            EventBus.events.collect { ev ->
+                if (ev is AppEvent.TransportDisconnected && _active.value.isActive) {
+                    Logx.i(TAG, "external stop detected, syncing state")
+                    if (bound) {
+                        try { getApplication<Application>().unbindService(connection) } catch (_: Exception) {}
+                    }
+                    bound = false
+                    service = null
+                    activeTunnelData = null
+                    _active.value = TunnelState.Idle
+                    stopUptimeCounter()
+                    refresh()
+                }
+            }
+        }
     }
 
     fun activeProfileMeta(): ProfileMeta = Profiles.of(_activeProfileType.value)

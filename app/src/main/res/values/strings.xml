@@ -6,6 +6,10 @@
     <string name="channel_name">VPN Service</string>
     <string name="notify_title">OpenFlux running</string>
     <string name="notify_msg">Tunnel is active</string>
+    <string name="notify_action_disconnect">Disconnect</string>
+    <string name="update_available_title">New version available</string>
+    <string name="update_available_message">Version %1$s is ready to install.</string>
+    <string name="update_now">Update</string>
 
     <string name="prof_default">Default</string>
 
