@@ -21,8 +21,14 @@ on:
           Tag to create the release under (used when triggering manually
           instead of by pushing a tag — this workflow creates the tag
           itself via the Releases API, no separate `git push --tags` needed).
+          Keep this a bare "vX.Y.Z" — it's stripped of its leading "v" and
+          used directly as the APK's versionName (see the "Determine app
+          version" step below), so a descriptive suffix here would ship
+          as part of the visible app version. generate_release_notes
+          below already puts a per-release description in the GitHub
+          release body, separately from the tag/version.
         required: true
-        default: v1.0.0-mailru
+        default: v1.1.6
 
 permissions:
   contents: write
