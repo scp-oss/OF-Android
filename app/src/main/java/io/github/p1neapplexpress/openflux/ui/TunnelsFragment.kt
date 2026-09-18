@@ -21,7 +21,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -120,7 +123,29 @@ class TunnelsFragment : BaseFragment() {
             qrScanner.launch(null)
         }
 
+        applyBottomBarInsets(view.findViewById(R.id.bottomBar))
+
         observe()
+    }
+
+    // The button row is pinned a fixed 28dp above the layout's own bottom
+    // edge (see fragment_tunnels.xml) — on some devices (seen on MIUI with
+    // gesture navigation) that fixed margin isn't enough clearance from the
+    // real system nav bar, and the buttons end up drawn under it, out of
+    // the visible/tappable area. Read the actual bottom system-bar inset
+    // here and add it on top of the XML margin instead of guessing at a
+    // bigger fixed number that would waste space on devices that don't
+    // need it.
+    private fun applyBottomBarInsets(bottomBar: View) {
+        val baseMargin = (bottomBar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = baseMargin + bars.bottom
+            }
+            insets
+        }
+        bottomBar.requestApplyInsets()
     }
 
     private fun requestVpnAndStart() {

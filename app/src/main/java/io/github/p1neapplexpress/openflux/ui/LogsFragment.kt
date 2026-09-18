@@ -16,6 +16,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
 import io.github.p1neapplexpress.openflux.R
 import io.github.p1neapplexpress.openflux.event.AppEvent
@@ -74,11 +77,29 @@ class LogsFragment : BaseFragment() {
             showCrashLogPicker()
         }
 
+        applyBottomBarInsets(view.findViewById(R.id.log_actions))
+
         viewLifecycleOwner.lifecycleScope.launch {
             EventBus.events.collect { ev ->
                 if (ev is AppEvent.LogMessage) enqueue(ev.message)
             }
         }
+    }
+
+    // Same fix as TunnelsFragment's button row: log_actions sits flush
+    // against the layout's own bottom edge with no margin, which some
+    // devices (gesture-nav MIUI) draw partly under the real system nav
+    // bar. Add the actual bottom system-bar inset as extra margin.
+    private fun applyBottomBarInsets(bar: View) {
+        val baseMargin = (bar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        ViewCompat.setOnApplyWindowInsetsListener(bar) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = baseMargin + bars.bottom
+            }
+            insets
+        }
+        bar.requestApplyInsets()
     }
 
     private fun showCrashLogPicker() {

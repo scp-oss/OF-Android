@@ -22,8 +22,16 @@ class MainActivity : AppCompatActivity() {
         val rootView = findViewById<View>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.updatePadding(top = bars.top, bottom = bars.bottom)
-            WindowInsetsCompat.CONSUMED
+            // Only the top (status bar) is handled here. The bottom system
+            // bar inset (nav bar / gesture area) is handled locally by
+            // whichever screen has bottom-anchored content that needs it
+            // (see TunnelsFragment.applyBottomBarInsets) — applying it both
+            // here as padding AND there as margin would double-count it.
+            view.updatePadding(top = bars.top)
+            // Not CONSUMED: pass the real insets through so descendant
+            // listeners (like that one) still get an accurate reading
+            // instead of a zeroed-out value.
+            insets
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         supportActionBar?.hide()
