@@ -35,14 +35,40 @@ android {
         aidl = true
     }
 
+    signingConfigs {
+        // A fixed, checked-in keystore — NOT a real secret, same status as
+        // AGP's own auto-generated debug.keystore (identical well-known
+        // store/key password "android", alias "androiddebugkey"; only the
+        // actual keypair differs). This exists as an explicit file instead
+        // of relying on signingConfigs.getByName("debug") because THAT one
+        // is generated on demand into ~/.android/debug.keystore the first
+        // time it's needed — on a fresh ubuntu-latest GitHub Actions runner
+        // (no ~/.android persisted between runs) that means every CI build
+        // signed with a brand-new random key. Android refuses to install
+        // an APK over an existing install when the signing certificate
+        // doesn't match, so every release silently required a manual
+        // uninstall first — exactly the "обновление не работает" report.
+        // A fixed, repo-committed keystore makes every build share the
+        // same signature, so Obtainium's in-place update actually applies.
+        create("release") {
+            // Named debug.keystore (not release.keystore) so it's picked
+            // up by this project's own pre-existing .gitignore exception
+            // (`*.keystore` is ignored, `!debug.keystore` is explicitly
+            // un-ignored) without having to touch that file.
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
-            // Sideloaded via Obtainium, not the Play Store — reuse the
-            // auto-generated debug key instead of managing a real release
-            // keystore. Still a validly signed APK (Android refuses to
-            // install a truly unsigned one), just not attributable to a
-            // dedicated release identity.
-            signingConfig = signingConfigs.getByName("debug")
+            // Sideloaded via Obtainium, not the Play Store — a fixed,
+            // repo-committed key (see signingConfigs.release above), not a
+            // real release identity. Still a validly signed APK (Android
+            // refuses to install a truly unsigned one).
+            signingConfig = signingConfigs.getByName("release")
             // R8 minification was configured here (isMinifyEnabled = true)
             // but proguard-rules.pro was completely empty — no keep rules
             // for kotlinx.serialization's reflective serializer lookup, the
