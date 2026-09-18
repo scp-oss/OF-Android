@@ -25,7 +25,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -490,11 +493,29 @@ class HomeFragment : BaseFragment() {
             verboseUi = checked
             prefs.edit().putBoolean(KEY_VERBOSE, checked).apply()
         }
+        applyDockInsets()
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 EventBus.events.collect { ev -> if (ev is AppEvent.LogMessage) appendLog(ev.message) }
             }
         }
+    }
+
+    // Same fix as the old bottom bars: the dock sits a fixed 14dp above
+    // this layout's own bottom edge, which on some devices (gesture-nav
+    // MIUI, seen with screenshots) isn't enough clearance from the real
+    // system nav bar — the log ends up drawn partly under it. Read the
+    // actual bottom system-bar inset and add it on top of the XML margin.
+    private fun applyDockInsets() {
+        val baseMargin = (dock.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        ViewCompat.setOnApplyWindowInsetsListener(dock) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = baseMargin + bars.bottom
+            }
+            insets
+        }
+        dock.requestApplyInsets()
     }
 
     private fun toggleConsole() {

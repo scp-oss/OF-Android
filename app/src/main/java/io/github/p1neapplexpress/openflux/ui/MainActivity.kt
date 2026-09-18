@@ -25,8 +25,8 @@ class MainActivity : AppCompatActivity() {
             // Only the top (status bar) is handled here. The bottom system
             // bar inset (nav bar / gesture area) is handled locally by
             // whichever screen has bottom-anchored content that needs it
-            // (see TunnelsFragment.applyBottomBarInsets) — applying it both
-            // here as padding AND there as margin would double-count it.
+            // (see HomeFragment.applyDockInsets) — applying it both here
+            // as padding AND there as margin would double-count it.
             view.updatePadding(top = bars.top)
             // Not CONSUMED: pass the real insets through so descendant
             // listeners (like that one) still get an accurate reading

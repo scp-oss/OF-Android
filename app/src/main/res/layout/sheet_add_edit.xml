@@ -39,6 +39,7 @@
             android:layout_height="32dp"
             android:background="@drawable/bg_icon_btn"
             android:src="@drawable/ic_close"
+            app:tint="@color/ink"
             android:scaleType="center"
             android:contentDescription="@string/close" />
 

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_sheet_top">
@@ -40,6 +42,7 @@
                 android:layout_height="32dp"
                 android:background="@drawable/bg_icon_btn"
                 android:src="@drawable/ic_close"
+                app:tint="@color/ink"
                 android:scaleType="center"
                 android:contentDescription="@string/close" />
 
@@ -77,8 +80,7 @@
             android:paddingHorizontal="12dp"
             android:paddingVertical="11dp"
             android:maxLines="1"
-            tools:text="10808"
-            xmlns:tools="http://schemas.android.com/tools" />
+            tools:text="10808" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -118,8 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:trackTint="@color/switch_track_tint"
-                app:thumbTint="@color/switch_thumb_tint"
-                xmlns:app="http://schemas.android.com/apk/res-auto" />
+                app:thumbTint="@color/switch_thumb_tint" />
 
         </LinearLayout>
 
