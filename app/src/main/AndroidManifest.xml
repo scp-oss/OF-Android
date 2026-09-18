@@ -47,5 +47,18 @@
                 android:value="vpn_tunnel" />
         </service>
 
+        <!-- Lets "Send logs by email" attach crash/app log files (see
+             HomeFragment.emailAllLogs) as content:// Uris instead of
+             file://, which Android blocks off-process since API 24. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 </manifest>

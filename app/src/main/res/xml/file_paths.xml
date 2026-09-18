@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backs the FileProvider used to attach log files (crash reports +
+    app_log.txt, both written straight into getFilesDir()/… by
+    CrashHandler/Logx) to an outgoing email Intent — a bare file:// Uri to
+    those paths is blocked off-process since API 24 (FileUriExposedException),
+    so ACTION_SEND_MULTIPLE needs a content:// Uri instead.
+-->
+<paths>
+    <files-path name="app_files" path="." />
+</paths>

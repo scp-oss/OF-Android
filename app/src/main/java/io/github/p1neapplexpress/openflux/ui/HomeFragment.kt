@@ -9,6 +9,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -25,6 +26,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -70,6 +72,11 @@ class HomeFragment : BaseFragment() {
         private const val KEY_CONSOLE_OPEN = "console_open"
         private const val DOCK_LOG_HEIGHT_DP = 190
         private const val GITHUB_REPO = "scp-oss/OF-Android"
+
+        // Direct request: a one-tap way to send every log file to this
+        // fixed address, instead of the generic share-chooser the user
+        // has to manually pick Gmail and address by hand for each time.
+        private const val LOGS_EMAIL = "mixaa1998@gmail.com"
     }
 
     private val vm: TunnelsViewModel by activityViewModels()
@@ -823,6 +830,9 @@ class HomeFragment : BaseFragment() {
         v.findViewById<View>(R.id.btnCrashLogs).setOnClickListener {
             showCrashLogPicker()
         }
+        v.findViewById<View>(R.id.btnEmailLogs).setOnClickListener {
+            emailAllLogs()
+        }
         v.findViewById<View>(R.id.btnAboutOpen).setOnClickListener {
             dialog.dismiss()
             openAboutSheet()
@@ -931,5 +941,45 @@ class HomeFragment : BaseFragment() {
         val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText(label, content))
         Toast.makeText(ctx, R.string.copied, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Every crash report plus the full app_log.txt, attached to one
+     * outgoing email Intent addressed to [LOGS_EMAIL]. Files are handed
+     * off via FileProvider content:// Uris (see res/xml/file_paths.xml) —
+     * a bare file:// path to app-private storage is blocked cross-process
+     * since API 24. Hands off to whatever mail app the user has (Gmail on
+     * their phone); this app never talks SMTP itself.
+     */
+    private fun emailAllLogs() {
+        val ctx = requireContext()
+        val crashFiles = CrashHandler.dir(ctx).listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
+        val fullLog = Logx.file()?.takeIf { it.exists() }
+        val files = crashFiles + listOfNotNull(fullLog)
+        if (files.isEmpty()) {
+            Toast.makeText(ctx, R.string.no_crash_logs, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val authority = "${ctx.packageName}.fileprovider"
+        val uris = files.mapNotNull { f ->
+            runCatching { FileProvider.getUriForFile(ctx, authority, f) }.getOrNull()
+        }
+        if (uris.isEmpty()) {
+            Toast.makeText(ctx, R.string.email_logs_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val subject = "OpenFlux logs — ${Build.MANUFACTURER} ${Build.MODEL}, " +
+            "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "message/rfc822"
+            putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf(LOGS_EMAIL))
+            putExtra(android.content.Intent.EXTRA_SUBJECT, subject)
+            putExtra(android.content.Intent.EXTRA_TEXT, getString(R.string.email_logs_body))
+            putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, ArrayList(uris))
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(android.content.Intent.createChooser(intent, getString(R.string.email_logs_chooser)))
     }
 }

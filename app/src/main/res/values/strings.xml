@@ -20,6 +20,10 @@
     <string name="copy">Copy</string>
     <string name="copied">Copied</string>
     <string name="close">Close</string>
+    <string name="email_logs_title">Send logs by email</string>
+    <string name="email_logs_chooser">Send logs via…</string>
+    <string name="email_logs_body">Attached: every crash log plus the full app log, sent from OpenFlux\'s log viewer.</string>
+    <string name="email_logs_failed">Could not prepare logs for sending</string>
 
     <string name="starting_transport">Starting transport…</string>
     <string name="starting_tsocks">Starting tun2socks…</string>
