@@ -61,6 +61,7 @@ import io.github.p1neapplexpress.openflux.util.toUptimeHms
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
