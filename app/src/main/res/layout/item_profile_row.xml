@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="10dp"
+    android:paddingVertical="10dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/rowAvatar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/bg_mono_chip"
+        android:fontFamily="monospace"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/ink"
+        android:gravity="center"
+        tools:text="M" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/rowName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink"
+            tools:text="Mail.ru" />
+
+        <TextView
+            android:id="@+id/rowSub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="10.5sp"
+            android:textColor="@color/ink_muted"
+            tools:text="cloud.mail.ru" />
+
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/rowEdit"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_edit_pencil"
+        android:scaleType="center"
+        app:tint="@color/ink_muted"
+        android:contentDescription="@string/action_edit" />
+
+</LinearLayout>

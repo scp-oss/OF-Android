@@ -5,15 +5,19 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.p1neapplexpress.openflux.IUnifiedService
+import io.github.p1neapplexpress.openflux.data.ProfileKind
+import io.github.p1neapplexpress.openflux.data.ProfileMeta
+import io.github.p1neapplexpress.openflux.data.Profiles
 import io.github.p1neapplexpress.openflux.data.Tunnel
 import io.github.p1neapplexpress.openflux.data.TunnelRepository
 import io.github.p1neapplexpress.openflux.data.TunnelState
-import io.github.p1neapplexpress.openflux.data.TunnelViewType
+import io.github.p1neapplexpress.openflux.data.TransportType
 import io.github.p1neapplexpress.openflux.service.SocksVpnService
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
@@ -28,10 +32,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+data class ProfileUiState(
+    val meta: ProfileMeta,
+    val configured: Boolean,
+    val summary: String,
+    val tunnel: Tunnel?,
+)
+
+sealed interface TestResult {
+    val type: TransportType
+    data class Running(override val type: TransportType) : TestResult
+    data class Success(override val type: TransportType, val elapsedMs: Long) : TestResult
+    data class Failure(override val type: TransportType, val reason: String) : TestResult
+}
+
 class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val TAG = "TunnelsViewModel"
+        private const val TEST_BIND_TIMEOUT_MS = 5_000L
+        private const val TEST_TRANSPORT_TIMEOUT_MS = 8_000L
     }
 
     private val repo = TunnelRepository(app)
@@ -59,8 +79,11 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private val _tunnels = MutableStateFlow<List<TunnelViewType>>(emptyList())
-    val tunnels: StateFlow<List<TunnelViewType>> = _tunnels.asStateFlow()
+    private val _profiles = MutableStateFlow<List<ProfileUiState>>(emptyList())
+    val profiles: StateFlow<List<ProfileUiState>> = _profiles.asStateFlow()
+
+    private val _activeProfileType = MutableStateFlow(TransportType.yandex)
+    val activeProfileType: StateFlow<TransportType> = _activeProfileType.asStateFlow()
 
     private val _active = MutableStateFlow<TunnelState>(TunnelState.Idle)
     val active: StateFlow<TunnelState> = _active.asStateFlow()
@@ -68,19 +91,22 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
     private val _uptimeSeconds = MutableStateFlow(0L)
     val uptimeSeconds: StateFlow<Long> = _uptimeSeconds.asStateFlow()
 
-    private val _selected = MutableStateFlow<Tunnel?>(null)
-    val selected: StateFlow<Tunnel?> = _selected.asStateFlow()
-
-    val selectedTunnelId: Long? get() = _selected.value?.id
+    private val _testResult = MutableStateFlow<TestResult?>(null)
+    val testResult: StateFlow<TestResult?> = _testResult.asStateFlow()
 
     private var uptimeJob: Job? = null
 
-    init { refresh() }
+    init {
+        val savedId = repo.getSelectedId()
+        _activeProfileType.value = TransportType.entries.getOrNull(savedId?.toInt() ?: 0) ?: TransportType.yandex
+        refresh()
+    }
+
+    fun activeProfileMeta(): ProfileMeta = Profiles.of(_activeProfileType.value)
 
     fun startCurrent() {
         val tunnel = _active.value.tunnel
-            ?: _selected.value
-            ?: repo.getSelected()
+            ?: repo.loadForType(_activeProfileType.value)
             ?: return
         startTunnel(tunnel)
     }
@@ -111,7 +137,7 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         activeTunnelData = tunnel
 
         CoroutineScope(Dispatchers.IO).launch {
-            
+
             var attempts = 0
             while (!bound && attempts < 100) {
                 delay(50)
@@ -124,7 +150,6 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
             }
             Logx.i(TAG, "service bound, starting transport")
 
-            
             _active.value = TunnelState.StartingTransport(tunnel)
             try {
                 service?.startOpenFluxNative(
@@ -137,7 +162,6 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            
             var transportReady = false
             for (i in 1..40) {
                 delay(250)
@@ -157,7 +181,6 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            
             Logx.i(TAG, "starting tun2socks")
             _active.value = TunnelState.StartingTun2Socks(tunnel)
             try {
@@ -168,7 +191,6 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            
             var vpnReady = false
             for (i in 1..40) {
                 delay(250)
@@ -215,47 +237,169 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() {
-        val list = repo.load()
-        val running = (_active.value as? TunnelState.Running)?.tunnel
-        _tunnels.value = list.map { TunnelViewType(it, enabled = it == running) }
-        _selected.value = repo.getSelected()
+        _profiles.value = Profiles.ALL.map { meta ->
+            val tunnel = repo.loadForType(meta.transport)
+            ProfileUiState(
+                meta = meta,
+                configured = tunnel != null,
+                summary = summaryFor(meta, tunnel),
+                tunnel = tunnel,
+            )
+        }
     }
 
-    fun selectTunnel(tunnel: Tunnel) {
+    fun selectProfile(type: TransportType) {
+        if (type == _activeProfileType.value) return
+        if (_active.value.isActive) stop()
+        _activeProfileType.value = type
+        repo.setSelectedId(type.ordinal.toLong())
+    }
+
+    /** Saves a LINK-kind profile's connection URL and (re)builds its CLI payload. */
+    fun saveProfileLink(type: TransportType, url: String) {
+        val payload = buildList {
+            add("--client"); add("--transport"); add(type.name)
+            add("--url"); add(url)
+            add("--debug")
+        }
+        val tunnel = Tunnel(
+            id = type.ordinal.toLong(),
+            name = Profiles.of(type).displayName,
+            transportType = type.name,
+            transportConnPayload = payload,
+        )
+        persistProfile(type, tunnel)
+    }
+
+    /** Saves a CREDENTIALS-kind profile (MAX) token/user id and (re)builds its CLI payload. */
+    fun saveProfileCredentials(type: TransportType, token: String, userId: String) {
+        val payload = buildList {
+            add("--client"); add("--transport"); add(type.name)
+            add("--maxToken"); add(token)
+            add("--maxUid"); add(userId)
+            add("--debug")
+        }
+        val tunnel = Tunnel(
+            id = type.ordinal.toLong(),
+            name = Profiles.of(type).displayName,
+            transportType = type.name,
+            transportConnPayload = payload,
+        )
+        persistProfile(type, tunnel)
+    }
+
+    private fun persistProfile(type: TransportType, tunnel: Tunnel) {
+        val wasActiveAndRunning = _active.value.isActive && _activeProfileType.value == type
+        if (wasActiveAndRunning) stop()
+        repo.saveForType(tunnel)
+        refresh()
+    }
+
+    /**
+     * Starts just the transport (not the full tun2socks/VPN routing step),
+     * waits for it to report connected, then tears everything back down —
+     * a real reachability check, not a simulation, reusing the exact same
+     * IUnifiedService surface startTunnel() uses. Refuses while a real
+     * tunnel is already active: NativeProcessSupervisor.start() silently
+     * no-ops on a second call while one is already running, which would
+     * make this falsely report success against whatever IS already up.
+     */
+    fun testProfile(type: TransportType) {
         if (_active.value.isActive) {
-            
-            stop()
+            _testResult.value = TestResult.Failure(type, "already_connected")
+            return
         }
-        repo.setSelectedId(tunnel.id)
-        _selected.value = tunnel
-    }
+        val tunnel = repo.loadForType(type) ?: run {
+            _testResult.value = TestResult.Failure(type, "not_configured")
+            return
+        }
 
-    fun addTunnel(tunnel: Tunnel) {
-        val current = repo.load().toMutableList()
-        if (current.none { it.id == tunnel.id }) {
-            current.add(tunnel)
-            repo.save(current)
-            refresh()
+        _testResult.value = TestResult.Running(type)
+        val ctx = getApplication<Application>()
+        var testService: IUnifiedService? = null
+        var testBound = false
+        val testConnection = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+                testService = IUnifiedService.Stub.asInterface(binder)
+                testBound = true
+            }
+            override fun onServiceDisconnected(name: ComponentName?) {
+                testService = null
+                testBound = false
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val startedAt = System.currentTimeMillis()
+            var ok = false
+            try {
+                val intent = VpnIntentFactory.build(ctx, VPNConfig(name = tunnel.name))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ctx.startForegroundService(intent)
+                } else {
+                    ctx.startService(intent)
+                }
+                ctx.bindService(Intent(ctx, SocksVpnService::class.java), testConnection, Context.BIND_AUTO_CREATE)
+
+                var waited = 0L
+                while (!testBound && waited < TEST_BIND_TIMEOUT_MS) {
+                    delay(50); waited += 50
+                }
+                if (!testBound || testService == null) {
+                    _testResult.value = TestResult.Failure(type, "bind_timeout")
+                    return@launch
+                }
+
+                testService?.startOpenFluxNative(tunnel.transportType, tunnel.transportConnPayload.toTypedArray())
+
+                waited = 0L
+                while (waited < TEST_TRANSPORT_TIMEOUT_MS) {
+                    delay(500); waited += 500
+                    if (testService?.isFServiceRunning() == true) { ok = true; break }
+                }
+            } catch (e: Exception) {
+                Logx.e(TAG, "testProfile failed", e)
+            } finally {
+                runCatching { testService?.stopOpenFluxNative() }
+                runCatching { testService?.stopVpn() }
+                runCatching { ctx.unbindService(testConnection) }
+                val elapsed = System.currentTimeMillis() - startedAt
+                _testResult.value = if (ok) TestResult.Success(type, elapsed) else TestResult.Failure(type, "timeout")
+            }
         }
     }
 
-    fun removeTunnel(tunnel: Tunnel) {
-        if (_active.value.tunnel == tunnel) stop()
-        val current = repo.load().toMutableList()
-        current.removeAll { it.id == tunnel.id }
-        repo.save(current)
-        refresh()
+    fun clearTestResult() {
+        _testResult.value = null
     }
 
-    fun updateTunnel(old: Tunnel, new: Tunnel) {
-        val current = repo.load().toMutableList()
-        val idx = current.indexOfFirst { it.id == old.id }
-        if (idx < 0) return
-        if (_active.value.tunnel == old) stop()
-        current[idx] = new
-        repo.save(current)
-        refresh()
+    private fun summaryFor(meta: ProfileMeta, tunnel: Tunnel?): String {
+        if (tunnel == null) return "не настроено"
+        return when (meta.kind) {
+            ProfileKind.CREDENTIALS -> {
+                val uid = argValue(tunnel.transportConnPayload, "--maxUid")
+                if (uid.isNullOrEmpty()) "не настроено" else "ID ···" + uid.takeLast(4)
+            }
+            ProfileKind.LINK -> {
+                val url = argValue(tunnel.transportConnPayload, "--url")
+                if (url.isNullOrEmpty()) "не настроено" else (runCatching { Uri.parse(url).host }.getOrNull() ?: "ссылка")
+            }
+        }
     }
+
+    private fun argValue(payload: List<String>, flag: String): String? {
+        val idx = payload.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < payload.size) payload[idx + 1] else null
+    }
+
+    fun urlFor(type: TransportType): String =
+        repo.loadForType(type)?.let { argValue(it.transportConnPayload, "--url") } ?: ""
+
+    fun tokenFor(type: TransportType): String =
+        repo.loadForType(type)?.let { argValue(it.transportConnPayload, "--maxToken") } ?: ""
+
+    fun userIdFor(type: TransportType): String =
+        repo.loadForType(type)?.let { argValue(it.transportConnPayload, "--maxUid") } ?: ""
 
     private fun startUptimeCounter() {
         uptimeJob?.cancel()

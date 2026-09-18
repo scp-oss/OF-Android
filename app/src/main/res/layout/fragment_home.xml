@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ground"
+    android:orientation="vertical">
+
+    <!-- ─────── topbar ─────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="12dp">
+
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_icon_btn"
+            android:src="@drawable/ic_settings_gear"
+            android:scaleType="center"
+            android:contentDescription="@string/settings"
+            android:padding="0dp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnAddLink"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_icon_btn_accent"
+            android:src="@drawable/ic_plus"
+            android:scaleType="center"
+            android:contentDescription="@string/add_link"
+            app:tint="@color/accent_ink"
+            android:padding="0dp" />
+
+    </LinearLayout>
+
+    <!-- ─────── scrolling content ─────── -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingBottom="18dp"
+            android:gravity="center_vertical"
+            android:minHeight="420dp">
+
+            <!-- hero: power control -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:paddingTop="20dp"
+                android:paddingBottom="4dp">
+
+                <FrameLayout
+                    android:id="@+id/powerWrap"
+                    android:layout_width="148dp"
+                    android:layout_height="148dp">
+
+                    <View
+                        android:id="@+id/powerRing"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_power_ring"
+                        android:alpha="0" />
+
+                    <FrameLayout
+                        android:id="@+id/powerBtn"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_margin="10dp"
+                        android:background="@drawable/bg_power_btn_idle"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/powerIcon"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_power"
+                            app:tint="@color/ink_faint" />
+
+                    </FrameLayout>
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <View
+                        android:id="@+id/statusDot"
+                        android:layout_width="7dp"
+                        android:layout_height="7dp"
+                        android:layout_marginEnd="7dp"
+                        android:background="@drawable/bg_dot" />
+
+                    <TextView
+                        android:id="@+id/heroState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/ink"
+                        tools:ignore="HardcodedText"
+                        tools:text="Отключено" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/uptimeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace"
+                    android:textSize="13sp"
+                    android:textColor="@color/ink_muted"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="00:42" />
+
+                <!-- profile dropdown -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp">
+
+                    <LinearLayout
+                        android:id="@+id/profileTrigger"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_surface_row"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:id="@+id/triggerAvatar"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_mono_chip"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/ink"
+                            android:gravity="center"
+                            tools:text="M" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/triggerName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/ink"
+                                tools:text="Mail.ru" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginTop="2dp">
+
+                                <View
+                                    android:id="@+id/triggerDot"
+                                    android:layout_width="6dp"
+                                    android:layout_height="6dp"
+                                    android:layout_marginEnd="5dp"
+                                    android:background="@drawable/bg_dot" />
+
+                                <TextView
+                                    android:id="@+id/triggerSub"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="monospace"
+                                    android:textSize="11sp"
+                                    android:textColor="@color/ink_muted"
+                                    tools:text="cloud.mail.ru" />
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/triggerChev"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_chevron_down"
+                            app:tint="@color/ink_faint" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/profilePanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="60dp"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_surface_card"
+                        android:elevation="6dp"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                </FrameLayout>
+
+            </LinearLayout>
+
+            <!-- availability check -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="22dp"
+                android:background="@drawable/bg_surface_card"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:id="@+id/btnAvailability"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/bg_button_outlined"
+                    android:paddingVertical="10dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="7dp"
+                        android:src="@drawable/ic_availability"
+                        app:tint="@color/ink" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/check_availability"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/ink" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/availResultBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="10dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="8dp"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <ProgressBar
+                        android:id="@+id/availSpinner"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginEnd="8dp"
+                        android:indeterminateTint="@color/ink_muted" />
+
+                    <TextView
+                        android:id="@+id/availResult"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:textSize="11.5sp"
+                        tools:text="OK — сервер доступен, задержка 620мс" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ─────── log dock ─────── -->
+    <LinearLayout
+        android:id="@+id/dock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="14dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_dock"
+        android:clipToOutline="true">
+
+        <ScrollView
+            android:id="@+id/dockLogScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@color/surface_2">
+
+            <TextView
+                android:id="@+id/logInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="2dp"
+                android:padding="12dp"
+                android:textColor="@color/ink_muted"
+                android:textSize="10.8sp" />
+
+        </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/dockBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/dockChev"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_chevron_down"
+                app:tint="@color/ink_faint" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/log_label"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:id="@+id/dockPreview"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="monospace"
+                android:textSize="11sp"
+                android:textColor="@color/ink_muted"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="приложение готово" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/verbose_label"
+                android:textSize="10.5sp"
+                android:textColor="@color/ink_muted"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchVerbose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:trackTint="@color/switch_track_tint"
+                app:thumbTint="@color/switch_thumb_tint" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

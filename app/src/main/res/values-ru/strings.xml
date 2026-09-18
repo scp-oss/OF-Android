@@ -84,4 +84,43 @@
     <string name="notify_msg_running">Туннель активен</string>
     <string name="notify_msg_error">Ошибка</string>
     <string name="notify_channel_desc">Статус VPN-сервиса</string>
+
+    <!-- Новый главный экран -->
+    <string name="settings">Настройки</string>
+    <string name="add_link">Добавить ссылку</string>
+    <string name="check_availability">Проверить доступность</string>
+    <string name="log_label">Лог</string>
+    <string name="verbose_label">подробно</string>
+    <string name="from_clipboard">Из буфера</string>
+    <string name="link_manual">Ссылка вручную</string>
+    <string name="test_connection">Тест соединения</string>
+    <string name="connection_settings">Настройки подключения</string>
+    <string name="settings_shared_hint">Общие для всех профилей.</string>
+    <string name="socks_port">Локальный порт SOCKS5</string>
+    <string name="udp_quic_label">Туннелировать UDP / QUIC</string>
+    <string name="udp_quic_hint">Выкл — QUIC идёт через TCP (работает везде). Вкл — нужен узел с поддержкой UDP.</string>
+    <string name="settings_not_wired_hint">Пока не влияет на реальное соединение — сохраняется на будущее, текущие сессии используют встроенные значения по умолчанию.</string>
+    <string name="save_settings">Сохранить настройки</string>
+    <string name="about_app">О приложении</string>
+    <string name="not_configured">не настроено</string>
+    <string name="profile_selected">Выбран профиль: %1$s</string>
+    <string name="reconnecting_via">Переключение на профиль %1$s — переподключение…</string>
+    <string name="detected_profile">Определён профиль: %1$s</string>
+    <string name="editing_profile">Профиль: %1$s</string>
+    <string name="domain_not_recognized">Домен не распознан — профиль не будет назначен автоматически</string>
+    <string name="invalid_link">Некорректная ссылка</string>
+    <string name="fill_token_and_uid">Заполните токен и числовой ID</string>
+    <string name="update_profile">Обновить профиль</string>
+    <string name="testing_availability">проверка ссылки и доступности сервера…</string>
+    <string name="test_ok">OK — сервер доступен, %1$d мс</string>
+    <string name="test_fail_timeout">Ошибка — сервер не ответил за отведённое время</string>
+    <string name="test_fail_not_configured">Профиль ещё не настроен</string>
+    <string name="test_fail_busy">Сначала остановите активный туннель, чтобы протестировать другой профиль</string>
+    <string name="test_fail_generic">Ошибка — не удалось связаться с сервером</string>
+    <string name="clipboard_empty">Буфер обмена пуст</string>
+    <string name="clipboard_unavailable">Буфер обмена недоступен</string>
+    <string name="about_desc_loading">Загрузка…</string>
+    <string name="about_desc_unavailable">Не удалось загрузить описание релиза с GitHub.</string>
+    <string name="edit_link_title">Изменить — %1$s</string>
+    <string name="add_link_title">Добавить ссылку</string>
 </resources>

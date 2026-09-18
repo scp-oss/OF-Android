@@ -43,4 +43,21 @@ class TunnelRepository(context: Context) {
         val id = getSelectedId()
         return all.firstOrNull { it.id == id } ?: all.first()
     }
+
+    /**
+     * One [Tunnel] per [TransportType] — the redesigned UI has exactly four
+     * fixed profiles, never an arbitrary user-named list. Storage format is
+     * unchanged (still a plain `List<Tunnel>` in the same pref key), so this
+     * reads/writes the same data the old free-form UI did.
+     */
+    fun loadForType(type: TransportType): Tunnel? =
+        load().firstOrNull { TransportType.from(it.transportType) == type }
+
+    fun saveForType(tunnel: Tunnel) {
+        val type = TransportType.from(tunnel.transportType)
+        val current = load().toMutableList()
+        val idx = current.indexOfFirst { TransportType.from(it.transportType) == type }
+        if (idx >= 0) current[idx] = tunnel else current.add(tunnel)
+        save(current)
+    }
 }

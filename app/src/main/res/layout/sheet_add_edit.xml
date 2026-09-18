@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_sheet_top"
+    android:paddingHorizontal="18dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="24dp">
+
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_sheet_grip" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="14dp">
+
+        <TextView
+            android:id="@+id/addSheetTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink"
+            tools:text="Изменить — Mail.ru" />
+
+        <ImageButton
+            android:id="@+id/closeAdd"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_icon_btn"
+            android:src="@drawable/ic_close"
+            android:scaleType="center"
+            android:contentDescription="@string/close" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="14dp">
+
+        <LinearLayout
+            android:id="@+id/btnPasteClipboard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_outlined"
+            android:paddingVertical="10dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/ic_clipboard"
+                app:tint="@color/ink" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/from_clipboard"
+                android:textSize="12.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnScanQr"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_outlined"
+            android:paddingVertical="10dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="6dp"
+                android:src="@drawable/ic_qr_scan"
+                app:tint="@color/ink" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/scan_qr"
+                android:textSize="12.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- link field -->
+    <LinearLayout
+        android:id="@+id/sheetLinkFields"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="14dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/link_manual"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink_muted"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/linkInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_surface_input"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
+            android:hint="https://…"
+            android:inputType="textUri"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="11dp"
+            android:maxLines="1" />
+
+    </LinearLayout>
+
+    <!-- MAX credentials fields -->
+    <LinearLayout
+        android:id="@+id/sheetCredFields"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="14dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/max_token"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink_muted"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/credToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_surface_input"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="@color/ink"
+            android:hint="auth token"
+            android:textColorHint="@color/ink_faint"
+            android:inputType="text"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="11dp"
+            android:maxLines="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/max_uid"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink_muted"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/credUserId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_surface_input"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="@color/ink"
+            android:hint="numeric id"
+            android:textColorHint="@color/ink_faint"
+            android:inputType="number"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="11dp"
+            android:maxLines="1" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/detectChip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_detect_chip"
+        android:paddingHorizontal="11dp"
+        android:paddingVertical="9dp"
+        android:layout_marginTop="12dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ImageView
+            android:id="@+id/detectIcon"
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_check"
+            app:tint="@color/accent" />
+
+        <TextView
+            android:id="@+id/detectText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent"
+            tools:text="Определён профиль: Mail.ru" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/addTestResultBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="10dp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="8dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ProgressBar
+            android:id="@+id/addTestSpinner"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/addTestResult"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:textSize="11.5sp"
+            tools:text="OK — сервер доступен" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="14dp">
+
+        <LinearLayout
+            android:id="@+id/btnTestAdd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_outlined"
+            android:paddingVertical="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/test_connection"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnSaveAdd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_primary"
+            android:paddingVertical="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:id="@+id/btnSaveAddText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_ink" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark palette — mirrors the @media (prefers-color-scheme: dark) tokens
+         in the redesign mockup. Android picks this file automatically when
+         the system is in dark mode (Theme.*.DayNight), same trigger as the
+         mockup's own CSS media query — no manual theme toggle needed. -->
+    <color name="ground">#0B0D11</color>
+    <color name="surface">#15181D</color>
+    <color name="surface_2">#1B1F26</color>
+    <color name="border">#272C34</color>
+    <color name="ink">#EDEEF1</color>
+    <color name="ink_muted">#8E96A3</color>
+    <color name="ink_faint">#666E7A</color>
+    <color name="accent">#5B87F5</color>
+    <color name="accent_ink">#0B0D11</color>
+    <color name="accent_wash">#1B2436</color>
+    <color name="success">#3BC787</color>
+    <color name="success_wash">#132821</color>
+    <color name="warning">#E3A83B</color>
+    <color name="warning_wash">#2B2214</color>
+    <color name="danger">#F0605F</color>
+    <color name="danger_wash">#2C1717</color>
+    <color name="mono_chip">#1F242B</color>
+    <color name="sheet_backdrop">#99000000</color>
+
+    <color name="toolbar_color">#00000000</color>
+    <color name="ic_launcher_background">#0F1420</color>
+</resources>
