@@ -172,7 +172,19 @@ class Tun2SocksLauncher(private val context: Context) {
         val f = File(context.filesDir, "pdnsd.conf")
         f.writeText(conf)
 
+        // pdnsd's perm_cache is a PERSISTENT on-disk cache (min_ttl=15m,
+        // max_ttl=1w in pdnsd.xml's template) reloaded from this file on
+        // every pdnsd startup — reusing an existing cache file across
+        // sessions means a hostname resolved once through the OLD
+        // upstream (e.g. Yandex) keeps answering from that cached record
+        // for up to a week, even after switching to a different DoT
+        // provider (e.g. Cloudflare) or plain DNS. Truncating it on every
+        // start makes a provider change actually take effect on the very
+        // next connect instead of silently depending on TTL expiry — the
+        // real cause of a live report: provider set to Cloudflare, but a
+        // DNS-server check still showed Yandex answering.
         val cache = File(context.filesDir, "pdnsd.cache")
-        if (!cache.exists()) cache.createNewFile()
+        cache.delete()
+        cache.createNewFile()
     }
 }

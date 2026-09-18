@@ -112,6 +112,7 @@
     <string name="dns_custom_format_hint">Format: address[:port]@tls-hostname</string>
     <string name="ping_label">ping %1$d ms</string>
     <string name="ping_pending">ping …</string>
+    <string name="dns_in_use">DNS: %1$s</string>
     <string name="about_app">About</string>
     <string name="not_configured">Not configured</string>
     <string name="profile_selected">Profile selected: %1$s</string>

@@ -114,6 +114,7 @@
     <string name="dns_custom_format_hint">Формат: адрес[:порт]@tls-хост</string>
     <string name="ping_label">пинг %1$d мс</string>
     <string name="ping_pending">пинг …</string>
+    <string name="dns_in_use">DNS: %1$s</string>
     <string name="about_app">О приложении</string>
     <string name="not_configured">не настроено</string>
     <string name="profile_selected">Выбран профиль: %1$s</string>

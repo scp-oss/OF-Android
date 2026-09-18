@@ -103,6 +103,7 @@ class HomeFragment : BaseFragment() {
     private lateinit var heroState: TextView
     private lateinit var uptimeText: TextView
     private lateinit var speedText: TextView
+    private lateinit var dnsInUseText: TextView
     private var speedJob: Job? = null
     private var rotationAnim: ObjectAnimator? = null
     private var breathAnim: ObjectAnimator? = null
@@ -184,6 +185,7 @@ class HomeFragment : BaseFragment() {
         heroState = view.findViewById(R.id.heroState)
         uptimeText = view.findViewById(R.id.uptimeText)
         speedText = view.findViewById(R.id.speedText)
+        dnsInUseText = view.findViewById(R.id.dnsInUseText)
 
         profileTrigger = view.findViewById(R.id.profileTrigger)
         triggerAvatar = view.findViewById(R.id.triggerAvatar)
@@ -310,8 +312,35 @@ class HomeFragment : BaseFragment() {
 
         uptimeText.isVisible = state is TunnelState.Running
         speedText.isVisible = state is TunnelState.Running
-        if (state is TunnelState.Running) startSpeedUpdates() else stopSpeedUpdates()
+        dnsInUseText.isVisible = state is TunnelState.Running
+        if (state is TunnelState.Running) {
+            startSpeedUpdates()
+            renderDnsInUse()
+        } else {
+            stopSpeedUpdates()
+        }
         renderTrigger()
+    }
+
+    // Whichever DNS provider was configured (see openDnsSettingsSheet())
+    // at the moment this connection started — read once here rather than
+    // polled, since a mid-connection settings change only takes effect on
+    // the next connect (same "applies on next connect" contract the DNS
+    // settings sheet's own hint text states), so it can't change under a
+    // running tunnel. Read from the same prefs TunnelsViewModel.
+    // currentDotSpec() resolves when it actually builds VPNConfig, so this
+    // always names the provider actually in effect, not just what's
+    // currently selected in Settings.
+    private fun renderDnsInUse() {
+        val providerId = prefs.getString(Constants.PREF_DNS_PROVIDER, null)
+        val provider = DnsProvider.byId(providerId)
+        val label = if (provider == DnsProvider.CUSTOM) {
+            prefs.getString(Constants.PREF_DNS_CUSTOM_SPEC, null)?.takeIf { it.isNotBlank() }
+                ?: getString(provider.labelRes)
+        } else {
+            getString(provider.labelRes)
+        }
+        dnsInUseText.text = getString(R.string.dns_in_use, label)
     }
 
     private fun animateIcon(scale: Float, alpha: Float) {
