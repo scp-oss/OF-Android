@@ -98,9 +98,24 @@ jobs:
           # sdkmanager fail outright ("Failed to find package 'tools'").
           packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
+      - name: Determine app version
+        id: appver
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag_name || github.ref_name }}"
+          name="${tag#v}"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          # run_number is a per-workflow, always-increasing integer — a
+          # much simpler source of a valid versionCode than trying to
+          # parse one out of an arbitrary tag string.
+          echo "code=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
       - name: Build release APK
         working-directory: of-android
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -PappVersionCode=${{ steps.appver.outputs.code }} \
+            -PappVersionName=${{ steps.appver.outputs.name }}
 
       - name: Locate APK
         id: apk

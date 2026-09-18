@@ -4,6 +4,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Overridable from CI (-PappVersionCode=... -PappVersionName=...) so the
+// APK's own manifest version actually matches the GitHub release tag it
+// ships under — this was hardcoded at 1/"1.0.0" for every release before,
+// which is why Obtainium showed "installed: 1.0.0" and offered an update
+// to the tag name it just installed. Falls back to these defaults for a
+// plain local `./gradlew assembleRelease` with no CI properties passed.
+val appVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
+val appVersionName = project.findProperty("appVersionName") as String? ?: "1.0.0"
+
 android {
     namespace = "io.github.p1neapplexpress.openflux"
     compileSdk = 34
@@ -12,8 +21,8 @@ android {
         applicationId = "io.github.p1neapplexpress.openflux"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
