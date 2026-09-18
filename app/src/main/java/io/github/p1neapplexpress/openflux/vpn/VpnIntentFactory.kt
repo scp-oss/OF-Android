@@ -14,6 +14,7 @@ object VpnIntentFactory {
             putExtra(Constants.INTENT_ROUTE, cfg.route)
             putExtra(Constants.INTENT_DNS, cfg.dns)
             putExtra(Constants.INTENT_DNS_PORT, cfg.dnsPort)
+            cfg.dotSpec.takeIf { it.isNotBlank() }?.let { putExtra(Constants.INTENT_DOT_SPEC, it) }
             putExtra(Constants.INTENT_PER_APP, cfg.perApp)
             putExtra(Constants.INTENT_APP_BYPASS, cfg.appBypass)
             putExtra(Constants.INTENT_APP_LIST, cfg.appList)

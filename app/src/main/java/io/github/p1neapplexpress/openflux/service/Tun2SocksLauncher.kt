@@ -19,6 +19,16 @@ class Tun2SocksLauncher(private val context: Context) {
         private const val TUN_MTU = 1500
         private const val DNS_GW = "26.26.26.1:8091"
         private const val LOG_LEVEL = "3"
+
+        // DNS-over-TLS: pdnsd itself has no TLS support (see dot-relay's
+        // own doc comment), so when dotSpec is set, pdnsd's upstream is
+        // repointed at this local relay instead of talking to a DNS
+        // server directly. Loopback + a fixed port is fine — this is
+        // strictly local, process-to-process on the device, never
+        // reachable off-device.
+        private const val DOT_RELAY_LISTEN = "127.0.0.1:8853"
+        private const val DOT_RELAY_HOST = "127.0.0.1"
+        private const val DOT_RELAY_PORT = 8853
     }
 
     fun start(
@@ -29,6 +39,7 @@ class Tun2SocksLauncher(private val context: Context) {
         password: String?,
         dns: String,
         dnsPort: Int,
+        dotSpec: String?,
         ipv6: Boolean,
         udpgw: String?,
     ): Boolean {
@@ -40,6 +51,7 @@ class Tun2SocksLauncher(private val context: Context) {
         val nativeDir = context.applicationInfo.nativeLibraryDir
         val pdnsdBin = "$nativeDir/libpdnsd.so"
         val tun2socksBin = "$nativeDir/libtun2socks.so"
+        val dotRelayBin = "$nativeDir/libp1npplydtdot.so"
 
         val sockPath = File(context.applicationInfo.dataDir, "sock_path").apply {
             if (!exists()) createNewFile()
@@ -47,8 +59,14 @@ class Tun2SocksLauncher(private val context: Context) {
             setReadable(true, false)
         }
 
-        
-        makePdnsdConf(dns, dnsPort)
+        val (pdnsdUpstreamIp, pdnsdUpstreamPort) = if (!dotSpec.isNullOrBlank()) {
+            startDotRelay(dotRelayBin, dotSpec)
+            DOT_RELAY_HOST to DOT_RELAY_PORT
+        } else {
+            dns to dnsPort
+        }
+
+        makePdnsdConf(pdnsdUpstreamIp, pdnsdUpstreamPort)
         Logx.i(TAG, "starting pdnsd")
         ProcessRunner.execFireAndForget(
             command = listOf(pdnsdBin, "-c", "${context.filesDir}/pdnsd.conf"),
@@ -88,7 +106,32 @@ class Tun2SocksLauncher(private val context: Context) {
         Logx.i(TAG, "stop()")
         ProcessRunner.killPidFile("${context.filesDir}/tun2socks.pid")
         ProcessRunner.killPidFile("${context.filesDir}/pdnsd.pid")
+        ProcessRunner.killPidFile("${context.filesDir}/dotrelay.pid")
         runCatching { File(context.applicationInfo.dataDir, "sock_path").delete() }
+    }
+
+    // Starts the DNS-over-TLS relay (native/dot-relay in this repo) that
+    // pdnsd's upstream gets repointed at — pdnsd can't speak TLS itself, so
+    // this sits between it and the real DoT server, relaying the identical
+    // length-prefixed wire format DNS-over-TCP already uses (RFC 7858 §3.3).
+    // dotSpec is passed straight through to the relay's own -servers flag —
+    // a ";"-separated "addr[:port]@sni" list, parsed and validated there.
+    private fun startDotRelay(bin: String, dotSpec: String) {
+        Logx.i(TAG, "starting dot-relay")
+        ProcessRunner.execFireAndForget(
+            command = listOf(
+                bin,
+                "-listen", DOT_RELAY_LISTEN,
+                "-servers", dotSpec,
+                "-pidfile", "${context.filesDir}/dotrelay.pid",
+            ),
+            workingDir = context.filesDir.absolutePath,
+        )
+        // Give it time to bind its listener before pdnsd's first upstream
+        // connection attempt — same pattern as the sleeps after pdnsd/
+        // tun2socks below, just shorter: this only needs to win a race
+        // against pdnsd starting, not settle a whole native subprocess.
+        Thread.sleep(300L)
     }
 
     private fun buildCommand(

@@ -11,6 +11,11 @@ data class VPNConfig(
     val route: String = Constants.ROUTE_ALL,
     val dns: String = "8.8.8.8",
     val dnsPort: Int = 53,
+    // DNS-over-TLS: a ";"-separated "addr[:port]@sni" spec (see
+    // native/dot-relay's own doc comment for the format and why pdnsd
+    // itself can't speak TLS). Blank = DoT disabled, dns/dnsPort above are
+    // used directly as plain DNS, same as before this field existed.
+    val dotSpec: String = "",
     val perApp: Boolean = false,
     val appBypass: Boolean = false,
     val appList: Array<String> = emptyArray(),
@@ -28,6 +33,7 @@ data class VPNConfig(
             route == other.route &&
             dns == other.dns &&
             dnsPort == other.dnsPort &&
+            dotSpec == other.dotSpec &&
             perApp == other.perApp &&
             appBypass == other.appBypass &&
             appList.contentEquals(other.appList) &&
@@ -44,6 +50,7 @@ data class VPNConfig(
         result = 31 * result + route.hashCode()
         result = 31 * result + dns.hashCode()
         result = 31 * result + dnsPort
+        result = 31 * result + dotSpec.hashCode()
         result = 31 * result + perApp.hashCode()
         result = 31 * result + appBypass.hashCode()
         result = 31 * result + appList.contentHashCode()

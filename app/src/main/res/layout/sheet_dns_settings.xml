@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet_top">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="24dp">
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_sheet_grip" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="14dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/dns_settings_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+            <ImageButton
+                android:id="@+id/closeDns"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_icon_btn"
+                android:src="@drawable/ic_close"
+                app:tint="@color/ink"
+                android:scaleType="center"
+                android:contentDescription="@string/close" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dns_settings_hint"
+            android:textSize="11sp"
+            android:textColor="@color/ink_faint"
+            android:layout_marginTop="10dp" />
+
+        <LinearLayout
+            android:id="@+id/dnsProviderList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_surface_card"
+            android:layout_marginTop="14dp" />
+
+        <LinearLayout
+            android:id="@+id/dnsCustomFields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="14dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dns_custom_label"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink_muted"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/dnsCustomInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_surface_input"
+                android:fontFamily="monospace"
+                android:textSize="13sp"
+                android:textColor="@color/ink"
+                android:textColorHint="@color/ink_faint"
+                android:hint="1.1.1.1@cloudflare-dns.com"
+                android:inputType="textUri"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="11dp"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dns_custom_format_hint"
+                android:textSize="10.5sp"
+                android:textColor="@color/ink_faint"
+                android:layout_marginTop="6dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnSaveDns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_primary"
+            android:paddingVertical="12dp"
+            android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_ink" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

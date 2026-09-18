@@ -11,6 +11,7 @@ import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.p1neapplexpress.openflux.IUnifiedService
+import io.github.p1neapplexpress.openflux.data.DnsProvider
 import io.github.p1neapplexpress.openflux.data.ProfileKind
 import io.github.p1neapplexpress.openflux.data.ProfileMeta
 import io.github.p1neapplexpress.openflux.data.Profiles
@@ -19,6 +20,7 @@ import io.github.p1neapplexpress.openflux.data.TunnelRepository
 import io.github.p1neapplexpress.openflux.data.TunnelState
 import io.github.p1neapplexpress.openflux.data.TransportType
 import io.github.p1neapplexpress.openflux.service.SocksVpnService
+import io.github.p1neapplexpress.openflux.util.Constants
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
 import io.github.p1neapplexpress.openflux.vpn.VpnIntentFactory
@@ -104,6 +106,20 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun activeProfileMeta(): ProfileMeta = Profiles.of(_activeProfileType.value)
 
+    // Resolves the DNS provider chosen in HomeFragment's DNS settings sheet
+    // (persisted to the same "home_ui" prefs it writes to — see
+    // Constants.PREF_HOME_UI) into the spec string VPNConfig.dotSpec needs.
+    // Read fresh on every startTunnel() call rather than cached, so a
+    // settings change takes effect on the next connect without needing a
+    // ViewModel restart.
+    private fun currentDotSpec(): String {
+        val app = getApplication<Application>()
+        val prefs = app.getSharedPreferences(Constants.PREF_HOME_UI, Context.MODE_PRIVATE)
+        val providerId = prefs.getString(Constants.PREF_DNS_PROVIDER, null)
+        val customSpec = prefs.getString(Constants.PREF_DNS_CUSTOM_SPEC, null)
+        return DnsProvider.resolveSpec(providerId, customSpec)
+    }
+
     fun startCurrent() {
         val tunnel = _active.value.tunnel
             ?: repo.loadForType(_activeProfileType.value)
@@ -119,7 +135,7 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         _active.value = TunnelState.Connecting(tunnel)
 
         val ctx = getApplication<Application>()
-        val cfg = VPNConfig(name = tunnel.name)
+        val cfg = VPNConfig(name = tunnel.name, dotSpec = currentDotSpec())
         val intent = VpnIntentFactory.build(ctx, cfg)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

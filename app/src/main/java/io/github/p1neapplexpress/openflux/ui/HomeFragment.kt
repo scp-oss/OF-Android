@@ -6,10 +6,13 @@ import android.animation.ValueAnimator
 import android.app.Activity.RESULT_OK
 import android.content.ClipboardManager
 import android.content.Context
+import android.net.TrafficStats
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
+import android.os.SystemClock
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
@@ -41,6 +44,7 @@ import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import io.github.p1neapplexpress.openflux.BuildConfig
 import io.github.p1neapplexpress.openflux.R
+import io.github.p1neapplexpress.openflux.data.DnsProvider
 import io.github.p1neapplexpress.openflux.data.ProfileKind
 import io.github.p1neapplexpress.openflux.data.ProfileMeta
 import io.github.p1neapplexpress.openflux.data.Profiles
@@ -50,22 +54,29 @@ import io.github.p1neapplexpress.openflux.event.AppEvent
 import io.github.p1neapplexpress.openflux.event.EventBus
 import io.github.p1neapplexpress.openflux.ui.widget.AuroraView
 import io.github.p1neapplexpress.openflux.ui.widget.PulseRingsView
+import io.github.p1neapplexpress.openflux.util.Constants
 import io.github.p1neapplexpress.openflux.util.CrashHandler
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.util.toUptimeHms
+import io.github.p1neapplexpress.openflux.vpn.VPNConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.net.URL
+import java.util.Locale
 
 class HomeFragment : BaseFragment() {
 
     companion object {
-        private const val PREFS = "home_ui"
+        private val PREFS = Constants.PREF_HOME_UI
         private const val KEY_VERBOSE = "verbose"
         private const val KEY_CONSOLE_OPEN = "console_open"
         private const val DOCK_LOG_HEIGHT_DP = 190
@@ -90,6 +101,8 @@ class HomeFragment : BaseFragment() {
     private lateinit var statusDot: View
     private lateinit var heroState: TextView
     private lateinit var uptimeText: TextView
+    private lateinit var speedText: TextView
+    private var speedJob: Job? = null
     private var rotationAnim: ObjectAnimator? = null
     private var breathAnim: ObjectAnimator? = null
     private var currentVisualState: TunnelState? = null
@@ -169,6 +182,7 @@ class HomeFragment : BaseFragment() {
         statusDot = view.findViewById(R.id.statusDot)
         heroState = view.findViewById(R.id.heroState)
         uptimeText = view.findViewById(R.id.uptimeText)
+        speedText = view.findViewById(R.id.speedText)
 
         profileTrigger = view.findViewById(R.id.profileTrigger)
         triggerAvatar = view.findViewById(R.id.triggerAvatar)
@@ -294,6 +308,8 @@ class HomeFragment : BaseFragment() {
         statusDot.background?.mutate()?.setTint(dotColor)
 
         uptimeText.isVisible = state is TunnelState.Running
+        speedText.isVisible = state is TunnelState.Running
+        if (state is TunnelState.Running) startSpeedUpdates() else stopSpeedUpdates()
         renderTrigger()
     }
 
@@ -360,6 +376,96 @@ class HomeFragment : BaseFragment() {
     private fun renderUptime(seconds: Long) {
         if (seconds <= 0L) return
         uptimeText.text = seconds.toUptimeHms()
+    }
+
+    // ==================================================================
+    // Speed + ping — direct request, alongside the DNS settings above.
+    // Throughput reuses the exact same per-UID TrafficStats counters
+    // VpnNotificationManager already polls for the pinned notification
+    // (see that class's own speedUpdater) — this is a second, independent
+    // reader of the same OS counters, purely UI-layer, no service/backend
+    // change needed. Ping is a plain TCP-connect timing against whichever
+    // DNS target is currently active (the chosen DoT server's real
+    // addr:port, or the plain-DNS default if DoT is off) — a raw ICMP
+    // ping needs root on Android, this is the honest reachable proxy for
+    // "is the DNS path responsive," and it's meaningful precisely because
+    // the DNS settings sheet right above this is what decides that path.
+    // ==================================================================
+
+    private fun startSpeedUpdates() {
+        if (speedJob?.isActive == true) return
+        speedJob = viewLifecycleOwner.lifecycleScope.launch {
+            val uid = Process.myUid()
+            var lastRx = TrafficStats.getUidRxBytes(uid).coerceAtLeast(0)
+            var lastTx = TrafficStats.getUidTxBytes(uid).coerceAtLeast(0)
+            var lastAt = SystemClock.elapsedRealtime()
+            var pingMs: Long? = null
+            var tick = 0
+            while (isActive) {
+                delay(1000L)
+                val now = SystemClock.elapsedRealtime()
+                val elapsed = (now - lastAt).coerceAtLeast(1)
+                val rx = TrafficStats.getUidRxBytes(uid).coerceAtLeast(0)
+                val tx = TrafficStats.getUidTxBytes(uid).coerceAtLeast(0)
+                val rxPerSec = (rx - lastRx) * 1000 / elapsed
+                val txPerSec = (tx - lastTx) * 1000 / elapsed
+                lastRx = rx; lastTx = tx; lastAt = now
+
+                // Ping is a blocking connect — measure every ~3rd tick, not
+                // every second, so it can't visibly stall the throughput
+                // readout while it's in flight.
+                tick++
+                if (tick % 3 == 1) {
+                    pingMs = withContext(Dispatchers.IO) { measurePing() }
+                }
+
+                val pingLabel = pingMs?.let { getString(R.string.ping_label, it.toInt()) }
+                    ?: getString(R.string.ping_pending)
+                speedText.text = "↑ ${formatSpeed(txPerSec)}   ↓ ${formatSpeed(rxPerSec)}   •   $pingLabel"
+            }
+        }
+    }
+
+    private fun stopSpeedUpdates() {
+        speedJob?.cancel()
+        speedJob = null
+    }
+
+    // Matches VpnNotificationManager.formatSpeed()'s own unlocalized B/s
+    // KB/s MB/s units exactly, so the in-app readout and the pinned
+    // notification's speed indicator never disagree on formatting.
+    private fun formatSpeed(bytesPerSecond: Long): String = when {
+        bytesPerSecond < 1024 -> "$bytesPerSecond B/s"
+        bytesPerSecond < 1024 * 1024 -> String.format(Locale.US, "%.0f KB/s", bytesPerSecond / 1024.0)
+        else -> String.format(Locale.US, "%.1f MB/s", bytesPerSecond / (1024.0 * 1024.0))
+    }
+
+    private fun measurePing(): Long? {
+        val (host, port) = currentDnsPingTarget()
+        return runCatching {
+            val start = SystemClock.elapsedRealtime()
+            Socket().use { it.connect(InetSocketAddress(host, port), 2000) }
+            SystemClock.elapsedRealtime() - start
+        }.getOrNull()
+    }
+
+    // Same provider/custom-spec prefs the DNS settings sheet writes,
+    // resolved into a host:port to actually measure. Falls back to
+    // VPNConfig's own plain-DNS default (not a re-hardcoded literal) when
+    // DoT is off, so this can never silently drift from what the tunnel
+    // itself actually uses.
+    private fun currentDnsPingTarget(): Pair<String, Int> {
+        val providerId = prefs.getString(Constants.PREF_DNS_PROVIDER, null)
+        val customSpec = prefs.getString(Constants.PREF_DNS_CUSTOM_SPEC, null)
+        val spec = DnsProvider.resolveSpec(providerId, customSpec)
+        if (spec.isBlank()) {
+            val default = VPNConfig(name = "")
+            return default.dns to default.dnsPort
+        }
+        val addrPart = spec.substringBefore("@")
+        val host = addrPart.substringBefore(":")
+        val port = addrPart.substringAfter(":", "853").toIntOrNull() ?: 853
+        return host to port
     }
 
     // ---------------------------------------------------------------- profile dropdown
@@ -825,12 +931,73 @@ class HomeFragment : BaseFragment() {
             Logx.i("Home", "settings saved: SOCKS5 port ${port.text}, UDP/QUIC ${if (udp.isChecked) "on" else "off"}")
             dialog.dismiss()
         }
+        v.findViewById<View>(R.id.btnDnsSettings).setOnClickListener {
+            dialog.dismiss()
+            openDnsSettingsSheet()
+        }
         v.findViewById<View>(R.id.btnEmailLogs).setOnClickListener {
             emailAllLogs()
         }
         v.findViewById<View>(R.id.btnAboutOpen).setOnClickListener {
             dialog.dismiss()
             openAboutSheet()
+        }
+
+        dialog.show()
+    }
+
+    // ==================================================================
+    // DNS settings sheet — plain DNS or one of the fixed DNS-over-TLS
+    // presets (Cloudflare/Yandex/Google/Quad9), or a custom "addr@sni"
+    // spec. See data/DnsProviders.kt and native/dot-relay for how the
+    // choice actually reaches the tunnel.
+    // ==================================================================
+
+    private fun openDnsSettingsSheet() {
+        val ctx = requireContext()
+        val dialog = BottomSheetDialog(ctx)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.sheet_dns_settings, null)
+        dialog.setContentView(v)
+
+        val list = v.findViewById<LinearLayout>(R.id.dnsProviderList)
+        val customFields = v.findViewById<View>(R.id.dnsCustomFields)
+        val customInput = v.findViewById<EditText>(R.id.dnsCustomInput)
+
+        var selected = DnsProvider.byId(prefs.getString(Constants.PREF_DNS_PROVIDER, null))
+        customInput.setText(prefs.getString(Constants.PREF_DNS_CUSTOM_SPEC, ""))
+
+        fun renderList() {
+            list.removeAllViews()
+            val inflater = LayoutInflater.from(ctx)
+            DnsProvider.entries.forEachIndexed { index, provider ->
+                val row = inflater.inflate(R.layout.item_dns_provider_row, list, false)
+                row.findViewById<TextView>(R.id.dnsRowLabel).setText(provider.labelRes)
+                row.findViewById<View>(R.id.dnsRowCheck).isVisible = provider == selected
+                row.setOnClickListener {
+                    selected = provider
+                    customFields.isVisible = provider == DnsProvider.CUSTOM
+                    renderList()
+                }
+                list.addView(row)
+                if (index < DnsProvider.entries.lastIndex) {
+                    list.addView(View(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
+                        setBackgroundColor(ContextCompat.getColor(ctx, R.color.border))
+                    })
+                }
+            }
+        }
+        renderList()
+        customFields.isVisible = selected == DnsProvider.CUSTOM
+
+        v.findViewById<View>(R.id.closeDns).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnSaveDns).setOnClickListener {
+            prefs.edit()
+                .putString(Constants.PREF_DNS_PROVIDER, selected.id)
+                .putString(Constants.PREF_DNS_CUSTOM_SPEC, customInput.text.toString().trim())
+                .apply()
+            Logx.i("Home", "DNS settings saved: provider=${selected.id}")
+            dialog.dismiss()
         }
 
         dialog.show()

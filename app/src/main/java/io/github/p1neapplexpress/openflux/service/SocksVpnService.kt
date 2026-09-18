@@ -55,6 +55,7 @@ class SocksVpnService : android.net.VpnService() {
                     password = i.getStringExtra(Constants.INTENT_PASSWORD),
                     dns = i.getStringExtra(Constants.INTENT_DNS) ?: "8.8.8.8",
                     dnsPort = i.getIntExtra(Constants.INTENT_DNS_PORT, 53),
+                    dotSpec = i.getStringExtra(Constants.INTENT_DOT_SPEC),
                     ipv6 = i.getBooleanExtra(Constants.INTENT_IPV6_PROXY, false),
                     udpgw = i.getStringExtra(Constants.INTENT_UDP_GW),
                 )

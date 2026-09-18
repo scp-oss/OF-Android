@@ -5,8 +5,11 @@ name: Build and release APK
 # transport upstream has, not whatever was last hand-built), packages it
 # into the APK the same way the original repo does (a native binary
 # disguised as jniLibs/arm64-v8a/libp1npplydtransport.so so the Android
-# package installer extracts it), builds the app, and attaches the APK to
-# a GitHub Release. Obtainium tracks *this* repo's Releases page — it
+# package installer extracts it). Also cross-compiles this repo's own
+# native/dot-relay (a small DNS-over-TLS front-end for pdnsd, see that
+# directory's own comments) the same disguised-.so way, as
+# libp1npplydtdot.so. Then builds the app, and attaches the APK to a
+# GitHub Release. Obtainium tracks *this* repo's Releases page — it
 # never builds anything itself, it just watches for a new release here
 # and installs the APK asset from it.
 
@@ -87,6 +90,32 @@ jobs:
           set -euo pipefail
           if ! strings "of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtransport.so" | grep -q "transport/mailru"; then
             echo "::error::rebuilt binary does not contain transport/mailru — upstream OpenFlux checkout may be stale or the package path changed"
+            exit 1
+          fi
+
+      - name: Build dot-relay (DNS-over-TLS front-end for pdnsd)
+        working-directory: of-android/native/dot-relay
+        run: |
+          set -euo pipefail
+          go vet ./...
+          go test ./...
+          # Pure Go, no cgo — GOOS=android only requires the NDK toolchain
+          # for cgo-using code (like openflux-core above); this module is
+          # stdlib-only, so a plain CGO_ENABLED=0 cross-compile is enough
+          # (verified locally: produces a correct arm64 Android ELF PIE
+          # linked against /system/bin/linker64, same shape as the prebuilt
+          # libpdnsd.so/libtun2socks.so already vendored in jniLibs).
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build \
+            -ldflags="-s -w" \
+            -o "$GITHUB_WORKSPACE/of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtdot.so" \
+            .
+          file "$GITHUB_WORKSPACE/of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtdot.so"
+
+      - name: Verify dot-relay binary looks intact
+        run: |
+          set -euo pipefail
+          if ! strings "of-android/app/src/main/jniLibs/arm64-v8a/libp1npplydtdot.so" | grep -q "dot-relay: listening on"; then
+            echo "::error::rebuilt dot-relay binary is missing its own log string — build may be broken/stripped wrong"
             exit 1
           fi
 

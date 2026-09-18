@@ -162,6 +162,18 @@
                     tools:visibility="visible"
                     tools:text="00:42" />
 
+                <TextView
+                    android:id="@+id/speedText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="monospace"
+                    android:textSize="12sp"
+                    android:textColor="@color/ink_faint"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:text="↑ 12 KB/s   ↓ 340 KB/s   •   пинг 34 мс" />
+
                 <!-- profile dropdown -->
                 <FrameLayout
                     android:layout_width="match_parent"
