@@ -117,6 +117,16 @@
     <string name="ping_label">ping %1$d ms</string>
     <string name="ping_pending">ping …</string>
     <string name="dns_in_use">DNS: %1$s</string>
+    <string name="direct_list_open">Direct access (bypass VPN)</string>
+    <string name="direct_list_title">Direct access</string>
+    <string name="direct_list_hint">Domains here are excluded from the tunnel and go straight over the normal network connection. Applies on the next connect. Android has no per-domain VPN routing, so this resolves each domain to its current IP address(es) and excludes those — a domain behind a CDN that rotates IPs can eventually drift out of the bypass.</string>
+    <string name="direct_list_manual_label">Domains (one per line)</string>
+    <string name="direct_list_manual_hint">example.com\nanother-site.ru</string>
+    <string name="direct_list_url_label">Sync from a URL (optional)</string>
+    <string name="direct_list_sync">Sync</string>
+    <string name="direct_list_sync_ok">Synced: %1$d domain(s)</string>
+    <string name="direct_list_sync_failed">Sync failed — check the URL</string>
+    <string name="direct_list_sync_empty">Enter a URL first</string>
     <string name="about_app">About</string>
     <string name="not_configured">Not configured</string>
     <string name="profile_selected">Profile selected: %1$s</string>

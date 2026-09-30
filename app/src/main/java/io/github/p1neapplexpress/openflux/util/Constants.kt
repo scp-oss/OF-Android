@@ -19,6 +19,12 @@ object Constants {
     const val INTENT_APP_LIST = INTENT_PREFIX + "APPLIST"
     const val INTENT_IPV6_PROXY = INTENT_PREFIX + "IPV6"
     const val INTENT_UDP_GW = INTENT_PREFIX + "UDPGW"
+    // Already-resolved IPv4 addresses (see DirectListResolver) for the
+    // "direct" bypass-VPN domain list — resolution happens in
+    // TunnelsViewModel before this intent is built, never in the service
+    // itself, so SocksVpnService/VpnServiceController never need to do
+    // their own DNS I/O.
+    const val INTENT_DIRECT_EXCLUDE_IPS = INTENT_PREFIX + "DIRECTIPS"
 
     // Action name for the "Отключить" button on the pinned VPN notification
     // (VpnNotificationManager) — a PendingIntent targeting SocksVpnService
@@ -40,4 +46,12 @@ object Constants {
     const val PREF_HOME_UI = "home_ui"
     const val PREF_DNS_PROVIDER = "dns_provider"
     const val PREF_DNS_CUSTOM_SPEC = "dns_custom_spec"
+
+    // "Direct" (bypass-VPN) domain list — one domain per line in both
+    // prefs. Manual and synced-from-URL entries are kept in separate keys
+    // (rather than merged into one on save) so re-syncing the URL never
+    // silently clobbers domains the user typed in by hand, and vice versa.
+    const val PREF_DIRECT_DOMAINS_MANUAL = "direct_domains_manual"
+    const val PREF_DIRECT_LIST_URL = "direct_list_url"
+    const val PREF_DIRECT_DOMAINS_SYNCED = "direct_domains_synced"
 }

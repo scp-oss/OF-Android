@@ -23,6 +23,7 @@ import io.github.p1neapplexpress.openflux.event.AppEvent
 import io.github.p1neapplexpress.openflux.event.EventBus
 import io.github.p1neapplexpress.openflux.service.SocksVpnService
 import io.github.p1neapplexpress.openflux.util.Constants
+import io.github.p1neapplexpress.openflux.util.DirectListResolver
 import io.github.p1neapplexpress.openflux.util.Logx
 import io.github.p1neapplexpress.openflux.vpn.VPNConfig
 import io.github.p1neapplexpress.openflux.vpn.VpnIntentFactory
@@ -156,32 +157,52 @@ class TunnelsViewModel(app: Application) : AndroidViewModel(app) {
         startTunnel(tunnel)
     }
 
+    // Domains from the "Прямой доступ" (direct/bypass-VPN) sheet — manual
+    // entries and the last successful sync from a URL are kept in
+    // separate prefs (see Constants' own comment) and merged here. "#"-led
+    // lines are treated as comments, matching the format a synced GitHub
+    // list is expected to use.
+    private fun currentDirectDomains(): List<String> {
+        val prefs = getApplication<Application>().getSharedPreferences(Constants.PREF_HOME_UI, Context.MODE_PRIVATE)
+        val manual = prefs.getString(Constants.PREF_DIRECT_DOMAINS_MANUAL, "").orEmpty().lines()
+        val synced = prefs.getString(Constants.PREF_DIRECT_DOMAINS_SYNCED, "").orEmpty().lines()
+        return (manual + synced)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") }
+            .distinct()
+    }
+
     fun startTunnel(tunnel: Tunnel) {
         val running = _active.value
         if (running is TunnelState.Running && running.tunnel == tunnel) return
         if (running.isActive) stop()
 
         _active.value = TunnelState.Connecting(tunnel)
-
-        val ctx = getApplication<Application>()
-        val cfg = VPNConfig(name = tunnel.name, dotSpec = currentDotSpec())
-        val intent = VpnIntentFactory.build(ctx, cfg)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            ctx.startForegroundService(intent)
-        } else {
-            ctx.startService(intent)
-        }
-
-        ctx.bindService(
-            Intent(ctx, SocksVpnService::class.java),
-            connection,
-            Context.BIND_AUTO_CREATE,
-        )
-
         activeTunnelData = tunnel
 
         CoroutineScope(Dispatchers.IO).launch {
+            val ctx = getApplication<Application>()
+            // Resolved here (background dispatcher, before the intent is
+            // built) rather than inside the service — DNS lookups are
+            // blocking I/O that shouldn't run on SocksVpnService's
+            // onStartCommand (main thread). See DirectListResolver's own
+            // doc comment for why IP resolution is the only mechanism
+            // Android's VpnService offers for a domain bypass list at all.
+            val directIps = DirectListResolver.resolve(currentDirectDomains())
+            val cfg = VPNConfig(name = tunnel.name, dotSpec = currentDotSpec(), directExcludeIps = directIps.toList())
+            val intent = VpnIntentFactory.build(ctx, cfg)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(intent)
+            } else {
+                ctx.startService(intent)
+            }
+
+            ctx.bindService(
+                Intent(ctx, SocksVpnService::class.java),
+                connection,
+                Context.BIND_AUTO_CREATE,
+            )
 
             var attempts = 0
             while (!bound && attempts < 100) {

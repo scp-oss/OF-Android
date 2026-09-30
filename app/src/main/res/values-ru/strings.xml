@@ -119,6 +119,16 @@
     <string name="ping_label">пинг %1$d мс</string>
     <string name="ping_pending">пинг …</string>
     <string name="dns_in_use">DNS: %1$s</string>
+    <string name="direct_list_open">Прямой доступ (мимо VPN)</string>
+    <string name="direct_list_title">Прямой доступ</string>
+    <string name="direct_list_hint">Домены отсюда исключаются из туннеля и идут напрямую через обычное сетевое соединение. Применяется при следующем подключении. У Android нет маршрутизации VPN по домену, поэтому каждый домен резолвится в текущий IP-адрес(а) и исключается именно он — домен за CDN с ротацией IP со временем может \"выпасть\" из обхода.</string>
+    <string name="direct_list_manual_label">Домены (по одному на строку)</string>
+    <string name="direct_list_manual_hint">example.com\nanother-site.ru</string>
+    <string name="direct_list_url_label">Синхронизация по URL (необязательно)</string>
+    <string name="direct_list_sync">Синхронизировать</string>
+    <string name="direct_list_sync_ok">Синхронизировано: %1$d домен(ов)</string>
+    <string name="direct_list_sync_failed">Не удалось синхронизировать — проверь URL</string>
+    <string name="direct_list_sync_empty">Сначала введи URL</string>
     <string name="about_app">О приложении</string>
     <string name="not_configured">не настроено</string>
     <string name="profile_selected">Выбран профиль: %1$s</string>

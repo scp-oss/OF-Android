@@ -19,6 +19,9 @@ object VpnIntentFactory {
             putExtra(Constants.INTENT_APP_BYPASS, cfg.appBypass)
             putExtra(Constants.INTENT_APP_LIST, cfg.appList)
             putExtra(Constants.INTENT_IPV6_PROXY, cfg.ipv6Proxy)
+            if (cfg.directExcludeIps.isNotEmpty()) {
+                putExtra(Constants.INTENT_DIRECT_EXCLUDE_IPS, cfg.directExcludeIps.toTypedArray())
+            }
             cfg.udpGw?.let { putExtra(Constants.INTENT_UDP_GW, it) }
             cfg.username?.let { putExtra(Constants.INTENT_USERNAME, it) }
             cfg.password?.let { putExtra(Constants.INTENT_PASSWORD, it) }

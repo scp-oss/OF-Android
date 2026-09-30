@@ -21,6 +21,11 @@ data class VPNConfig(
     val appList: Array<String> = emptyArray(),
     val ipv6Proxy: Boolean = false,
     val udpGw: String? = null,
+    // "Direct" domain-bypass list, already resolved to IPv4 addresses (see
+    // DirectListResolver/Cidr) — empty means every route this profile
+    // would otherwise use is untouched. Resolution happens once, before
+    // this config is built; VPNConfig itself never does network I/O.
+    val directExcludeIps: List<String> = emptyList(),
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -38,7 +43,8 @@ data class VPNConfig(
             appBypass == other.appBypass &&
             appList.contentEquals(other.appList) &&
             ipv6Proxy == other.ipv6Proxy &&
-            udpGw == other.udpGw
+            udpGw == other.udpGw &&
+            directExcludeIps == other.directExcludeIps
     }
 
     override fun hashCode(): Int {
@@ -56,6 +62,7 @@ data class VPNConfig(
         result = 31 * result + appList.contentHashCode()
         result = 31 * result + ipv6Proxy.hashCode()
         result = 31 * result + (udpGw?.hashCode() ?: 0)
+        result = 31 * result + directExcludeIps.hashCode()
         return result
     }
 }

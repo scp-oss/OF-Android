@@ -42,6 +42,7 @@ class VpnServiceController(private val service: VpnService) {
         val appBypass = intent.getBooleanExtra(Constants.INTENT_APP_BYPASS, false)
         val appList = intent.getStringArrayExtra(Constants.INTENT_APP_LIST) ?: emptyArray()
         val ipv6 = intent.getBooleanExtra(Constants.INTENT_IPV6_PROXY, false)
+        val directExcludeIps = (intent.getStringArrayExtra(Constants.INTENT_DIRECT_EXCLUDE_IPS) ?: emptyArray()).toSet()
 
         val builder = service.Builder()
             .setMtu(MTU)
@@ -54,7 +55,7 @@ class VpnServiceController(private val service: VpnService) {
                 .addRoute("::", 0)
         }
 
-        Routes.addRoutes(service, builder, route)
+        Routes.addRoutes(service, builder, route, directExcludeIps)
         builder.addRoute(LOOPBACK_DNS, 32)
 
         runCatching { builder.addDisallowedApplication(service.packageName) }

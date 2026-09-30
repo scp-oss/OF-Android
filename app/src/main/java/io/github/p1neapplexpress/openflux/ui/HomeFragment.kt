@@ -967,6 +967,10 @@ class HomeFragment : BaseFragment() {
             dialog.dismiss()
             openDnsSettingsSheet()
         }
+        v.findViewById<View>(R.id.btnDirectList).setOnClickListener {
+            dialog.dismiss()
+            openDirectListSheet()
+        }
         v.findViewById<View>(R.id.btnEmailLogs).setOnClickListener {
             emailAllLogs()
         }
@@ -1033,6 +1037,92 @@ class HomeFragment : BaseFragment() {
         }
 
         dialog.show()
+    }
+
+    // ==================================================================
+    // "Прямой доступ" (direct/bypass-VPN domain list) sheet — manual
+    // entries plus an optional sync from a raw text URL (e.g. a GitHub
+    // raw file, one domain per line). Resolution to IPs and actually
+    // excluding them from the tunnel's routes happens later, in
+    // TunnelsViewModel.startTunnel()/Routes.addRoutes/Cidr — this sheet
+    // only edits the domain list itself.
+    // ==================================================================
+
+    private fun openDirectListSheet() {
+        val ctx = requireContext()
+        val dialog = BottomSheetDialog(ctx)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.sheet_direct_list, null)
+        dialog.setContentView(v)
+
+        val manualInput = v.findViewById<EditText>(R.id.directManualInput)
+        val urlInput = v.findViewById<EditText>(R.id.directUrlInput)
+        val syncSpinner = v.findViewById<ProgressBar>(R.id.directSyncSpinner)
+        val syncStatus = v.findViewById<TextView>(R.id.directSyncStatus)
+
+        manualInput.setText(prefs.getString(Constants.PREF_DIRECT_DOMAINS_MANUAL, ""))
+        urlInput.setText(prefs.getString(Constants.PREF_DIRECT_LIST_URL, ""))
+        prefs.getString(Constants.PREF_DIRECT_DOMAINS_SYNCED, null)?.takeIf { it.isNotBlank() }?.let { synced ->
+            val count = synced.lines().count { it.isNotBlank() && !it.trim().startsWith("#") }
+            syncStatus.isVisible = true
+            syncStatus.text = getString(R.string.direct_list_sync_ok, count)
+        }
+
+        v.findViewById<View>(R.id.closeDirect).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnSyncDirect).setOnClickListener {
+            val url = urlInput.text.toString().trim()
+            if (url.isEmpty()) {
+                Toast.makeText(ctx, R.string.direct_list_sync_empty, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            syncSpinner.isVisible = true
+            viewLifecycleOwner.lifecycleScope.launch {
+                val domains = fetchDirectListFromUrl(url)
+                syncSpinner.isVisible = false
+                if (domains == null) {
+                    Toast.makeText(ctx, R.string.direct_list_sync_failed, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                prefs.edit()
+                    .putString(Constants.PREF_DIRECT_LIST_URL, url)
+                    .putString(Constants.PREF_DIRECT_DOMAINS_SYNCED, domains.joinToString("\n"))
+                    .apply()
+                syncStatus.isVisible = true
+                syncStatus.text = getString(R.string.direct_list_sync_ok, domains.size)
+                Logx.i("Home", "direct list synced from $url: ${domains.size} domains")
+            }
+        }
+        v.findViewById<View>(R.id.btnSaveDirect).setOnClickListener {
+            prefs.edit()
+                .putString(Constants.PREF_DIRECT_DOMAINS_MANUAL, manualInput.text.toString().trim())
+                .putString(Constants.PREF_DIRECT_LIST_URL, urlInput.text.toString().trim())
+                .apply()
+            Logx.i("Home", "direct list saved")
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    // Fetches a plain-text domain list (one per line, "#"-led lines and
+    // blanks ignored) from an arbitrary URL — e.g. a GitHub raw file, per
+    // direct request. Capped at 2000 lines / ~256KB read so a mistakenly
+    // huge or non-list URL can't stall the sheet or bloat SharedPreferences.
+    private suspend fun fetchDirectListFromUrl(url: String): List<String>? = withContext(Dispatchers.IO) {
+        runCatching {
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            val text = conn.inputStream.bufferedReader().useLines { lines ->
+                lines.take(2000).joinToString("\n")
+            }
+            text.lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .distinct()
+                .toList()
+        }.onFailure {
+            Logx.w("Home", "direct list sync failed: ${it.message}")
+        }.getOrNull()
     }
 
     // ==================================================================

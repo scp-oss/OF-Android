@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet_top">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="24dp">
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_sheet_grip" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="14dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/direct_list_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+            <ImageButton
+                android:id="@+id/closeDirect"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_icon_btn"
+                android:src="@drawable/ic_close"
+                app:tint="@color/ink"
+                android:scaleType="center"
+                android:contentDescription="@string/close" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/direct_list_hint"
+            android:textSize="11sp"
+            android:textColor="@color/ink_faint"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/direct_list_manual_label"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink_muted"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/directManualInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_surface_input"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
+            android:hint="@string/direct_list_manual_hint"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:gravity="top|start"
+            android:minLines="4"
+            android:maxLines="8"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="11dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/direct_list_url_label"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink_muted"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/directUrlInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_surface_input"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="@color/ink"
+            android:textColorHint="@color/ink_faint"
+            android:hint="https://raw.githubusercontent.com/.../list.txt"
+            android:inputType="textUri"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="11dp"
+            android:maxLines="1" />
+
+        <LinearLayout
+            android:id="@+id/btnSyncDirect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_outlined"
+            android:paddingVertical="10dp"
+            android:layout_marginTop="8dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ProgressBar
+                android:id="@+id/directSyncSpinner"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/btnSyncDirectText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/direct_list_sync"
+                android:textSize="12.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/ink" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/directSyncStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10.5sp"
+            android:textColor="@color/ink_faint"
+            android:layout_marginTop="6dp"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="Синхронизировано: 42 домена" />
+
+        <LinearLayout
+            android:id="@+id/btnSaveDirect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_button_primary"
+            android:paddingVertical="12dp"
+            android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_ink" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
